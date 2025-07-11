@@ -10,11 +10,14 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
+        // 只保留插件仓库
+        gradlePluginPortal()
         google()
         mavenCentral()
-        gradlePluginPortal()
     }
 }
+
+
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"

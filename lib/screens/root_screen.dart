@@ -1,34 +1,27 @@
-// 引入依赖文件
-
-import 'package:TwentyHours/screens/home_screen.dart';
 import 'package:flutter/material.dart';
-
+import 'package:TwentyHours/screens/home_screen.dart';
+import 'package:TwentyHours/screens/add_skill_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
 
-// --- 两个临时的、空白的占位页面 ---
-
-// 统计页面
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('这里是统计页面')));
+    return const Center(child: Text('统计页面（待开发）'));
   }
 }
 
-// 设置页面
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('这里是设置页面')));
+    return const Center(child: Text('设置页面（待开发）'));
   }
 }
-// --- 占位页面创建结束 ---
 
-// ===========================================================================
-// RootScreen: 应用根页面，管理全局UI框架和导航
-// ===========================================================================
+// --- RootScreen Widget 定义 ---
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
 
@@ -36,67 +29,94 @@ class RootScreen extends StatefulWidget {
   State<RootScreen> createState() => _RootScreenState();
 }
 
+// --- RootScreen State 定义 ---
 class _RootScreenState extends State<RootScreen> {
-  // --- 1. 状态变量 ---
-
-  // 用于记录当前选中的是哪个页面的索引 (0: 计时, 1: 统计, 2: 设置)
+  // 1. 状态变量
   int _selectedIndex = 0;
+  final GlobalKey<HomeScreenState> _homeScreenKey =
+      GlobalKey<HomeScreenState>();
+  late final List<Widget> _widgetOptions;
 
-  // 定义一个页面列表，与我们的导航入口一一对应
-  final List<Widget> _widgetOptions = <Widget>[
-    const HomeScreen(), // 索引 0
-    const StatsScreen(), // 索引 1
-    const SettingsScreen(), // 索引 2
-  ];
+  // 2. 初始化
+  @override
+  void initState() {
+    super.initState();
+    _widgetOptions = <Widget>[
+      HomeScreen(key: _homeScreenKey),
+      const StatsScreen(),
+      const SettingsScreen(),
+    ];
+  }
 
-  // --- 2. 核心逻辑 ---
-  // 当侧边栏的某个入口被点击时，这个方法会被调用
+  // 3. 核心逻辑方法
   void _onItemTapped(int index) {
-    // 使用 setState 来更新我们选中的索引
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // --- 3. UI构建 ---
+  void _onAddSkillPressed() async {
+    final newSkillName = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddSkillScreen()),
+    );
+    if (newSkillName != null && newSkillName.isNotEmpty) {
+      _homeScreenKey.currentState?.addSkill(newSkillName);
+    }
+  }
+
+  void _onTimerButtonPressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GenericTimerScreen()),
+    );
+  }
+
+  // 4. UI 构建
   @override
   Widget build(BuildContext context) {
-    // 返回一个 Scaffold，作为整个应用的“骨架”
     return Scaffold(
-      // 全局的顶栏 AppBar
       appBar: AppBar(
-        // AppBar 的标题，会根据当前选中的页面动态改变
         title: Text(
           _selectedIndex == 0 ? 'α计时' : (_selectedIndex == 1 ? '统计' : '设置'),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _onAddSkillPressed,
+            tooltip: '添加新技能',
+          ),
+        ],
       ),
-
-      // 全局的侧边栏 Drawer
+      body: _widgetOptions[_selectedIndex],
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const UserAccountsDrawerHeader(
-              accountName: Text(
-                "开狼 (林子琰)",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              accountEmail: Text("kailang@example.dev"),
+            UserAccountsDrawerHeader(
+              accountName: const Text("开狼"),
+              accountEmail: const Text("linziyan@example.com"),
               currentAccountPicture: CircleAvatar(
-                child: Text("K", style: TextStyle(fontSize: 40.0)),
+                //child: ClipOval(child: Image.asset('assets/images/avatar.png')),
               ),
-              decoration: BoxDecoration(color: Color(0xFF2C3E50)),
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                //image: DecorationImage(
+                 // image: AssetImage('assets/images/drawer_bg.jpg'),
+                 // fit: BoxFit.cover,
+                ),
+              ),
             ),
             ListTile(
-              leading: const Icon(Icons.timer_outlined),
+              leading: const Icon(Icons.timer),
               title: const Text('计时'),
               onTap: () {
                 _onItemTapped(0);
-                Navigator.pop(context); // 关闭侧边栏
+                Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.bar_chart_outlined),
+              leading: const Icon(Icons.bar_chart),
               title: const Text('统计'),
               onTap: () {
                 _onItemTapped(1);
@@ -104,7 +124,7 @@ class _RootScreenState extends State<RootScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings_outlined),
+              leading: const Icon(Icons.settings),
               title: const Text('设置'),
               onTap: () {
                 _onItemTapped(2);
@@ -114,23 +134,20 @@ class _RootScreenState extends State<RootScreen> {
           ],
         ),
       ),
-
-      // 页面的主体内容，会根据 _selectedIndex 动态地从列表中选择
-      body: _widgetOptions.elementAt(_selectedIndex),
-
-      // 悬浮操作按钮
-      floatingActionButton: FloatingActionButton.large(
-        onPressed: () {
-          // 跳转到“添加技能”页面
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const GenericTimerScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.timer), label: '计时'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '统计'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '设置'),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
-
-      // 悬浮按钮的位置:居中浮动
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.large(
+        onPressed: _onTimerButtonPressed,
+        child: const Icon(Icons.timer_outlined, size: 48),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

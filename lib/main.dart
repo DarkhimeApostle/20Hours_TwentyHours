@@ -11,7 +11,7 @@ class TwentyHours extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '20timer', // 暂用名字
+      title: 'TwentyHours', // 项目名字
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2C3E50)),
         useMaterial3: true,
