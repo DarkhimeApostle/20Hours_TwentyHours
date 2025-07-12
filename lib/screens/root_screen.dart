@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:TwentyHours/screens/home_screen.dart';
 import 'package:TwentyHours/screens/add_skill_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
+import '../main.dart';
 
+// 统计页面，暂未实现具体功能
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
 
@@ -12,6 +14,7 @@ class StatsScreen extends StatelessWidget {
   }
 }
 
+// 设置页面，暂未实现具体功能
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -21,7 +24,7 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// --- RootScreen Widget 定义 ---
+// 应用主页面，包含底部导航栏和页面切换逻辑
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
 
@@ -29,15 +32,19 @@ class RootScreen extends StatefulWidget {
   State<RootScreen> createState() => _RootScreenState();
 }
 
-// --- RootScreen State 定义 ---
+// RootScreen的状态管理
 class _RootScreenState extends State<RootScreen> {
-  // 1. 状态变量
+  // 当前选中的底部导航栏索引
   int _selectedIndex = 0;
+
+  // 用于操作HomeScreen的方法
   final GlobalKey<HomeScreenState> _homeScreenKey =
       GlobalKey<HomeScreenState>();
+
+  // 页面列表
   late final List<Widget> _widgetOptions;
 
-  // 2. 初始化
+  // 初始化页面列表
   @override
   void initState() {
     super.initState();
@@ -48,13 +55,14 @@ class _RootScreenState extends State<RootScreen> {
     ];
   }
 
-  // 3. 核心逻辑方法
+  // 切换底部导航栏页面
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  // 跳转到添加技能页面
   void _onAddSkillPressed() async {
     final newSkillName = await Navigator.push<String>(
       context,
@@ -65,6 +73,7 @@ class _RootScreenState extends State<RootScreen> {
     }
   }
 
+  // 跳转到通用计时页面
   void _onTimerButtonPressed() {
     Navigator.push(
       context,
@@ -72,7 +81,7 @@ class _RootScreenState extends State<RootScreen> {
     );
   }
 
-  // 4. UI 构建
+  // 构建页面UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,9 +96,65 @@ class _RootScreenState extends State<RootScreen> {
             tooltip: '添加新技能',
           ),
         ],
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: 0,
       ),
-      body: _widgetOptions[_selectedIndex],
+
+      // 页面内容和悬浮按钮
+      body: Stack(
+        children: [
+          _widgetOptions[_selectedIndex],
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 30),
+              child: Container(
+                height: 120,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kButtonDark
+                      : kButtonLight,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 18,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: RawMaterialButton(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  onPressed: _onTimerButtonPressed,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? kIconBgDark
+                          : kIconBgLight,
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(18),
+                    child: Icon(
+                      Icons.timer_outlined,
+                      size: 43,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? kTextMainDark
+                          : kPrimaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      // 侧边抽屉菜单
       drawer: Drawer(
+        backgroundColor: Theme.of(context).cardColor,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -97,18 +162,43 @@ class _RootScreenState extends State<RootScreen> {
               accountName: const Text("开狼"),
               accountEmail: const Text("linziyan@example.com"),
               currentAccountPicture: CircleAvatar(
-                //child: ClipOval(child: Image.asset('assets/images/avatar.png')),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? kIconBgDark
+                    : kIconBgLight,
+                child: Icon(
+                  Icons.person,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
               ),
-              decoration: const BoxDecoration(
-                color: Colors.blue,
-                //image: DecorationImage(
-                 // image: AssetImage('assets/images/drawer_bg.jpg'),
-                 // fit: BoxFit.cover,
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kButtonDark
+                    : kButtonLight,
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/drawer_bg.jpg'),
+                  fit: BoxFit.cover,
+                  opacity: 0.15,
                 ),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.timer),
+              leading: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.timer,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
               title: const Text('计时'),
               onTap: () {
                 _onItemTapped(0);
@@ -116,7 +206,21 @@ class _RootScreenState extends State<RootScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.bar_chart),
+              leading: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.bar_chart,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
               title: const Text('统计'),
               onTap: () {
                 _onItemTapped(1);
@@ -124,7 +228,21 @@ class _RootScreenState extends State<RootScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings),
+              leading: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.settings,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
               title: const Text('设置'),
               onTap: () {
                 _onItemTapped(2);
@@ -134,20 +252,94 @@ class _RootScreenState extends State<RootScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.timer), label: '计时'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '统计'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '设置'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+
+      // 底部导航栏，切换不同页面
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? kCardDark
+              : kCardLight,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          items: [
+            BottomNavigationBarItem(
+              icon: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.timer,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
+              label: '计时',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.bar_chart,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
+              label: '统计',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kIconBgDark
+                      : kIconBgLight,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.settings,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? kTextMainDark
+                      : kPrimaryColor,
+                ),
+              ),
+              label: '设置',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: kPrimaryColor,
+          unselectedItemColor: kTextSub,
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          type: BottomNavigationBarType.fixed,
+          showUnselectedLabels: true,
+        ),
       ),
-      floatingActionButton: FloatingActionButton.large(
-        onPressed: _onTimerButtonPressed,
-        child: const Icon(Icons.timer_outlined, size: 48),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
