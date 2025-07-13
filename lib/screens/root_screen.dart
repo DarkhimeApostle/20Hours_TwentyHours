@@ -159,27 +159,45 @@ class _RootScreenState extends State<RootScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: const Text("开狼"),
-              accountEmail: const Text("linziyan@example.com"),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Theme.of(context).brightness == Brightness.dark
-                    ? kIconBgDark
-                    : kIconBgLight,
-                child: Icon(
-                  Icons.person,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
+              accountName: const Text(
+                "开狼",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              accountEmail: const Text(
+                "linziyan@example.com",
+                style: TextStyle(color: Colors.white70),
+              ),
+              currentAccountPicture: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? kPrimaryColor.withOpacity(0.85)
                       : kPrimaryColor,
+                  child: Icon(Icons.person, color: Colors.white, size: 40),
                 ),
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kButtonDark
-                    : kButtonLight,
-                image: const DecorationImage(
+                color: Colors.transparent,
+                image: DecorationImage(
                   image: AssetImage('assets/images/drawer_bg.jpg'),
                   fit: BoxFit.cover,
-                  opacity: 0.15,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.35),
+                    BlendMode.darken,
+                  ),
                 ),
               ),
             ),
