@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:TwentyHours/screens/home_screen.dart';
 import 'package:TwentyHours/screens/add_skill_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
+import 'package:TwentyHours/screens/promotion_screen.dart';
 import '../main.dart';
 
 // 统计页面，暂未实现具体功能
@@ -50,7 +51,7 @@ class _RootScreenState extends State<RootScreen> {
     super.initState();
     _widgetOptions = <Widget>[
       HomeScreen(key: _homeScreenKey),
-      const StatsScreen(),
+      const PromotionScreen(),
       const SettingsScreen(),
     ];
   }
@@ -74,11 +75,25 @@ class _RootScreenState extends State<RootScreen> {
   }
 
   // 跳转到通用计时页面
-  void _onTimerButtonPressed() {
-    Navigator.push(
+  void _onTimerButtonPressed() async {
+    // 跳转计时页并传递技能列表
+    final skills = _homeScreenKey.currentState?.skills;
+    if (skills == null) return;
+    final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const GenericTimerScreen()),
+      MaterialPageRoute(
+        builder: (context) => const GenericTimerScreen(),
+        settings: RouteSettings(arguments: skills),
+      ),
     );
+    // 计时页返回后处理归属结果
+    if (result is Map &&
+        result['skillIndex'] != null &&
+        result['duration'] != null) {
+      final int idx = result['skillIndex'];
+      final int seconds = result['duration'];
+      _homeScreenKey.currentState?.addTimeToSkill(idx, seconds);
+    }
   }
 
   // 构建页面UI
@@ -87,7 +102,7 @@ class _RootScreenState extends State<RootScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _selectedIndex == 0 ? 'α计时' : (_selectedIndex == 1 ? '统计' : '设置'),
+          _selectedIndex == 0 ? 'α计时' : (_selectedIndex == 1 ? '宣传' : '设置'),
         ),
         actions: [
           IconButton(
@@ -104,51 +119,67 @@ class _RootScreenState extends State<RootScreen> {
       body: Stack(
         children: [
           _widgetOptions[_selectedIndex],
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 30),
-              child: Container(
-                height: 120,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kButtonDark
-                      : kButtonLight,
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 18,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
+          // 只在计时页面显示悬浮按钮
+          if (_selectedIndex == 0)
+            AnimatedOpacity(
+              opacity: _selectedIndex == 0 ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                transform: Matrix4.translationValues(
+                  0,
+                  _selectedIndex == 0 ? 0 : 50,
+                  0,
                 ),
-                child: RawMaterialButton(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  onPressed: _onTimerButtonPressed,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? kIconBgDark
-                          : kIconBgLight,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(18),
-                    child: Icon(
-                      Icons.timer_outlined,
-                      size: 43,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? kTextMainDark
-                          : kPrimaryColor,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 30),
+                    child: Container(
+                      height: 120,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? kButtonDark
+                            : kButtonLight,
+                        borderRadius: BorderRadius.circular(40),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: RawMaterialButton(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        onPressed: _onTimerButtonPressed,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? kIconBgDark
+                                : kIconBgLight,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(18),
+                          child: Icon(
+                            Icons.timer_outlined,
+                            size: 43,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? kTextMainDark
+                                : kPrimaryColor,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
 

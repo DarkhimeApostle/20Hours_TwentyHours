@@ -70,6 +70,16 @@ class SkillCard extends StatelessWidget {
                             : kTextMain,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      skill.formattedTime,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? kTextSubDark
+                            : kTextSub,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     LinearProgressIndicator(
                       value: skill.progress,

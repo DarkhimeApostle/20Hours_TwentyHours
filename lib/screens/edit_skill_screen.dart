@@ -1,112 +1,668 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
+import 'package:TwentyHours/main.dart';
 
-// 编辑技能页面，允许用户修改或删除技能
 class EditSkillScreen extends StatefulWidget {
-  // 需要传入要编辑的技能对象
-  final Skill skillToEdit;
-  const EditSkillScreen({super.key, required this.skillToEdit});
+  final Skill skill;
+  final int skillIndex;
+
+  const EditSkillScreen({
+    super.key,
+    required this.skill,
+    required this.skillIndex,
+  });
 
   @override
   State<EditSkillScreen> createState() => _EditSkillScreenState();
 }
 
-// EditSkillScreen的状态管理
-class _EditSkillScreenState extends State<EditSkillScreen> {
-  // 输入框控制器，用于管理技能名称输入
-  late final TextEditingController _nameController;
+class _EditSkillScreenState extends State<EditSkillScreen>
+    with TickerProviderStateMixin {
+  late TextEditingController _nameController;
+  late TextEditingController _hoursController;
+  late TextEditingController _minutesController;
+
+  late AnimationController _fadeAnimationController;
+  late AnimationController _slideAnimationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  // 可选的图标列表（扩展版）
+  final List<IconData> _availableIcons = [
+    Icons.timer,
+    Icons.school,
+    Icons.work,
+    Icons.fitness_center,
+    Icons.music_note,
+    Icons.book,
+    Icons.code,
+    Icons.brush,
+    Icons.sports_esports,
+    Icons.kitchen,
+    Icons.directions_run,
+    Icons.psychology,
+    Icons.language,
+    Icons.science,
+    Icons.architecture,
+    Icons.medical_services,
+    Icons.computer,
+    Icons.phone_android,
+    Icons.camera_alt,
+    Icons.videocam,
+    Icons.headphones,
+    Icons.gamepad,
+    Icons.sports_soccer,
+    Icons.sports_basketball,
+    Icons.sports_tennis,
+    Icons.sports_volleyball,
+    Icons.sports_cricket,
+    Icons.sports_hockey,
+    Icons.sports_rugby,
+    Icons.sports_martial_arts,
+    Icons.sports_kabaddi,
+    Icons.sports_motorsports,
+    Icons.sports_esports,
+  ];
+
+  IconData _selectedIcon = Icons.timer;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // 初始化输入框内容为当前技能名称
-    _nameController = TextEditingController(text: widget.skillToEdit.name);
+    _initializeControllers();
+    _initializeAnimations();
+  }
+
+  void _initializeControllers() {
+    _nameController = TextEditingController(text: widget.skill.name);
+    _selectedIcon = widget.skill.icon;
+
+    // 将总秒数转换为小时、分钟
+    final totalSeconds = widget.skill.totalTime;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+
+    _hoursController = TextEditingController(text: hours.toString());
+    _minutesController = TextEditingController(text: minutes.toString());
+  }
+
+  void _initializeAnimations() {
+    _fadeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _slideAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fadeAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _slideAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    // 启动动画
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _fadeAnimationController.forward();
+        _slideAnimationController.forward();
+      }
+    });
   }
 
   @override
   void dispose() {
-    // 页面销毁时释放资源
     _nameController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
+    _fadeAnimationController.dispose();
+    _slideAnimationController.dispose();
     super.dispose();
   }
 
-  // 显示删除确认对话框
-  Future<bool> _showDeleteConfirmationDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('确认删除'),
-          content: Text('您确定要永久删除【${widget.skillToEdit.name}】吗？此操作无法撤销。'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('取消'),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('确认删除'),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        );
-      },
-    );
-    return result ?? false;
+  // 保存编辑
+  void _saveChanges() async {
+    if (_nameController.text.trim().isEmpty) {
+      _showErrorSnackBar('技能名称不能为空');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 计算总秒数
+      final hours = int.tryParse(_hoursController.text) ?? 0;
+      final minutes = int.tryParse(_minutesController.text) ?? 0;
+      final totalSeconds = hours * 3600 + minutes * 60;
+
+      // 创建更新后的技能
+      final updatedSkill = Skill(
+        name: _nameController.text.trim(),
+        totalTime: totalSeconds,
+        icon: _selectedIcon,
+        progress: widget.skill.progress, // 保持原有进度
+      );
+
+      // 返回更新结果
+      Navigator.of(context).pop({
+        'action': 'save',
+        'skillIndex': widget.skillIndex,
+        'skill': updatedSkill,
+      });
+    } catch (e) {
+      _showErrorSnackBar('保存失败，请重试');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  // 删除技能并返回主页面
-  void _deleteAndExit() async {
-    final confirmed = await _showDeleteConfirmationDialog();
-    if (confirmed && mounted) {
-      Navigator.pop(context, "DELETE");
-    }
+  // 删除技能
+  void _deleteSkill() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: Text('确定要删除技能"${widget.skill.name}"吗？此操作不可撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(
+                context,
+              ).pop({'action': 'delete', 'skillIndex': widget.skillIndex});
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  // 获取格式化的时间显示（时-分）
+  String _getFormattedTime() {
+    final hours = int.tryParse(_hoursController.text) ?? 0;
+    final minutes = int.tryParse(_minutesController.text) ?? 0;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+
+  // 获取滑块当前值
+  double _getSliderValue() {
+    final hours = int.tryParse(_hoursController.text) ?? 0;
+    final minutes = int.tryParse(_minutesController.text) ?? 0;
+    final totalSeconds = hours * 3600 + minutes * 60;
+    return totalSeconds.toDouble().clamp(0, 72000);
+  }
+
+  // 从滑块更新时间
+  void _updateTimeFromSlider(double value) {
+    final totalSeconds = value.toInt();
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+
+    _hoursController.text = hours.toString();
+    _minutesController.text = minutes.toString();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('编辑技能'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            tooltip: '保存更改',
-            onPressed: () {
-              // 保存后返回输入框内容
-              Navigator.pop(context, _nameController.text);
-            },
-          ),
-        ],
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: CustomScrollView(
+            slivers: [
+              // 技能图标选择区域
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '选择图标',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kTextMainDark
+                                  : kTextMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 8,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                        itemCount: _availableIcons.length,
+                        itemBuilder: (context, index) {
+                          final icon = _availableIcons[index];
+                          final isSelected = _selectedIcon == icon;
 
-      // 页面内容区域
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            // 技能名称输入框
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '技能名称',
-                border: OutlineInputBorder(),
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedIcon = icon),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).brightness ==
+                                          Brightness.dark
+                                    ? kIconBgDark
+                                    : kIconBgLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey.shade300,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Icon(
+                                icon,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Theme.of(context).brightness ==
+                                          Brightness.dark
+                                    ? kTextMainDark
+                                    : kPrimaryColor,
+                                size: 24,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
 
-            // 删除技能按钮
-            ElevatedButton.icon(
-              onPressed: _deleteAndExit,
-              icon: const Icon(Icons.delete_forever_outlined),
-              label: const Text('删除此技能'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+              // 技能名称编辑区域
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '技能名称',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kTextMainDark
+                                  : kTextMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          hintText: '输入技能名称',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+
+              // 时间编辑区域
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '累计时间',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kTextMainDark
+                                  : kTextMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 时间显示区域
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kIconBgDark
+                              : kIconBgLight,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.timer,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _getFormattedTime(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? kTextMainDark
+                                    : kTextMain,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // 滑块控制
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '快速调整',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? kTextMainDark
+                                      : kTextMain,
+                                ),
+                              ),
+                              Text(
+                                '0-20小时',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? kTextSubDark
+                                      : kTextSub,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              inactiveTrackColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kIconBgDark
+                                  : kIconBgLight,
+                              thumbColor: Theme.of(context).colorScheme.primary,
+                              overlayColor: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.2),
+                              trackHeight: 6,
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 8,
+                              ),
+                            ),
+                            child: Slider(
+                              value: _getSliderValue(),
+                              min: 0,
+                              max: 72000, // 20小时 = 72000秒
+                              divisions: 240, // 每5分钟一个刻度
+                              onChanged: (value) {
+                                _updateTimeFromSlider(value);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // 精确输入区域
+                      Text(
+                        '精确调整',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kTextMainDark
+                              : kTextMain,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _hoursController,
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: '小时',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _minutesController,
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: '分钟',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 底部按钮区域
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _deleteSkill,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            '删除技能',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _saveChanges,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  '保存更改',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 底部间距
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          ),
         ),
       ),
     );

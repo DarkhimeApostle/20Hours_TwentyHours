@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 // HomeScreen的状态管理
 class HomeScreenState extends State<HomeScreen> {
   // 技能列表
-  List<Skill> _skills = [];
+  List<Skill> skills = [];
 
   @override
   void initState() {
@@ -36,22 +36,22 @@ class HomeScreenState extends State<HomeScreen> {
         final parts = skillString.split('|');
         return Skill(
           name: parts[0],
-          totalTime: parts[1],
+          totalTime: int.tryParse(parts[1]) ?? 0,
           icon: IconData(int.parse(parts[2]), fontFamily: 'MaterialIcons'),
           progress: double.parse(parts[3]),
         );
       }).toList();
 
       setState(() {
-        _skills = loadedSkills;
+        skills = loadedSkills;
       });
     } else {
       // 没有数据时，显示默认欢迎技能
       setState(() {
-        _skills = [
+        skills = [
           Skill(
             name: '开始您的第一个技能吧！',
-            totalTime: '点击下方+号添加',
+            totalTime: 0,
             icon: Icons.pan_tool_alt_outlined,
             progress: 0.1,
           ),
@@ -63,7 +63,7 @@ class HomeScreenState extends State<HomeScreen> {
   // 保存技能数据到本地
   Future<void> _saveSkills() async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> skillsAsString = _skills.map((skill) {
+    final List<String> skillsAsString = skills.map((skill) {
       return '${skill.name}|${skill.totalTime}|${skill.icon.codePoint}|${skill.progress}';
     }).toList();
     await prefs.setStringList('skills_list_key', skillsAsString);
@@ -72,7 +72,7 @@ class HomeScreenState extends State<HomeScreen> {
   // 删除指定索引的技能
   void _deleteSkill(int index) {
     setState(() {
-      _skills.removeAt(index);
+      skills.removeAt(index);
     });
     _saveSkills();
   }
@@ -80,13 +80,8 @@ class HomeScreenState extends State<HomeScreen> {
   // 添加新技能
   void addSkill(String name) {
     setState(() {
-      _skills.add(
-        Skill(
-          name: name,
-          totalTime: '0小时 0分钟',
-          icon: Icons.star_border,
-          progress: 0.0,
-        ),
+      skills.add(
+        Skill(name: name, totalTime: 0, icon: Icons.star_border, progress: 0.0),
       );
     });
     _saveSkills();
@@ -95,9 +90,19 @@ class HomeScreenState extends State<HomeScreen> {
   // 更新技能名称
   void _updateSkill(int index, String newName) {
     setState(() {
-      _skills[index] = _skills[index].copyWith(name: newName);
+      skills[index] = skills[index].copyWith(name: newName);
     });
     _saveSkills();
+  }
+
+  // 添加新方法：累加技能时长
+  void addTimeToSkill(int index, int seconds) {
+    if (index >= 0 && index < skills.length) {
+      setState(() {
+        skills[index] = skills[index].addTime(seconds);
+      });
+      _saveSkills();
+    }
   }
 
   // 构建技能列表UI
@@ -106,9 +111,9 @@ class HomeScreenState extends State<HomeScreen> {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: ListView.builder(
-        itemCount: _skills.length,
+        itemCount: skills.length,
         itemBuilder: (context, index) {
-          final skill = _skills[index];
+          final skill = skills[index];
           return InkWell(
             onTap: () {
               Navigator.of(context).push(
@@ -127,17 +132,21 @@ class HomeScreenState extends State<HomeScreen> {
                 );
               },
               onCardLongPressed: () async {
-                final result = await Navigator.push<String>(
+                final result = await Navigator.push<Map<String, dynamic>>(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditSkillScreen(skillToEdit: skill),
+                    builder: (context) =>
+                        EditSkillScreen(skill: skill, skillIndex: index),
                   ),
                 );
                 if (result != null) {
-                  if (result == "DELETE") {
-                    _deleteSkill(index);
-                  } else if (result.isNotEmpty) {
-                    _updateSkill(index, result);
+                  if (result['action'] == 'delete') {
+                    _deleteSkill(result['skillIndex']);
+                  } else if (result['action'] == 'save') {
+                    setState(() {
+                      skills[result['skillIndex']] = result['skill'];
+                    });
+                    _saveSkills();
                   }
                 }
               },
