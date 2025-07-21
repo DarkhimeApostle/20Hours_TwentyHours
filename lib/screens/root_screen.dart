@@ -34,7 +34,7 @@ class RootScreen extends StatefulWidget {
 }
 
 // RootScreen的状态管理
-class _RootScreenState extends State<RootScreen> {
+class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   // 当前选中的底部导航栏索引
   int _selectedIndex = 0;
 
@@ -45,6 +45,16 @@ class _RootScreenState extends State<RootScreen> {
   // 页面列表
   late final List<Widget> _widgetOptions;
 
+  // 动画控制器
+  late AnimationController _animationController;
+  late AnimationController _stripeAnimationController;
+
+  // 条纹动画的偏移量
+  double _stripeOffset = 0.0;
+
+  // 条纹间距
+  final double stripeSpacing = 10.0;
+
   // 初始化页面列表
   @override
   void initState() {
@@ -54,6 +64,22 @@ class _RootScreenState extends State<RootScreen> {
       const PromotionScreen(),
       const SettingsScreen(),
     ];
+
+    // 初始化动画控制器
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // 条纹动画控制器（持续循环）
+    _stripeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // 启动动画
+    _animationController.forward();
+    _stripeAnimationController.repeat(); // 条纹动画持续循环
   }
 
   // 切换底部导航栏页面
@@ -101,8 +127,55 @@ class _RootScreenState extends State<RootScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _selectedIndex == 0 ? 'α计时' : (_selectedIndex == 1 ? '宣传' : '设置'),
+        title: Row(
+          children: [
+            // 用户头像
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kPrimaryColor.withOpacity(0.85)
+                    : kPrimaryColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            // 用户ID
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '开狼',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? kTextMainDark
+                        : kTextMain,
+                  ),
+                ),
+                Text(
+                  'linziyan@example.com',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? kTextSubDark
+                        : kTextSub,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -113,6 +186,7 @@ class _RootScreenState extends State<RootScreen> {
         ],
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
+        toolbarHeight: 80, // 增加工具栏高度
       ),
 
       // 页面内容和悬浮按钮

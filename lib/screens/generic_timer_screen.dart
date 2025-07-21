@@ -23,8 +23,6 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   String _displayTime = '00:00:00';
   // 是否正在计时
   bool _isTimerRunning = false;
-  // 是否已结束计时
-  bool _isFinished = false;
 
   // 音效播放器
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -114,20 +112,26 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   // 结束计时
   void _finishTiming() async {
     _stopTimer();
-    setState(() {
-      _isFinished = true;
-    });
+
     // 直接传递技能列表给弹窗
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) =>
           SkillSelectDialog(skills: _skills, duration: _stopwatch.elapsed),
     );
+
+    // 如果用户选择了技能，返回结果；如果取消，直接退出
+    debugPrint('Dialog result: $result');
     if (result != null && result['skillIndex'] != null) {
+      debugPrint('User selected skill: ${result['skillIndex']}');
       Navigator.of(context).pop({
         'skillIndex': result['skillIndex'],
         'duration': _stopwatch.elapsed.inSeconds,
       });
+    } else {
+      debugPrint('User cancelled, exiting timer page');
+      // 用户取消，直接退出计时页面
+      Navigator.of(context).pop();
     }
   }
 
@@ -166,10 +170,7 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
               ),
             ),
             const SizedBox(height: 40),
-            if (_isFinished)
-              _buildAttributionControls()
-            else
-              _buildTimerControls(),
+            _buildTimerControls(),
           ],
         ),
       ),
@@ -202,32 +203,6 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
           ),
           onPressed: _finishTiming,
           child: const Text('结束', style: TextStyle(fontSize: 18)),
-        ),
-      ],
-    );
-  }
-
-  // 构建归属控制按钮
-  Widget _buildAttributionControls() {
-    return Column(
-      children: [
-        const Text('将本次记录归属到:'),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('放弃记录'),
-            ),
-            const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: () {
-                // 这里可以实现弹出技能选择器并返回计时结果
-              },
-              child: const Text('确认归属'),
-            ),
-          ],
         ),
       ],
     );

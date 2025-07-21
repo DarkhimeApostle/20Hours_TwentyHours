@@ -42,4 +42,16 @@ class Skill {
     final seconds = totalTime % 60;
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
+
+  // 根据20小时目标计算进度
+  double get progressBasedOn20Hours {
+    const int targetSeconds = 20 * 3600; // 20小时 = 72000秒
+    return (totalTime / targetSeconds).clamp(0.0, 1.0);
+  }
+
+  // 获取进度百分比文本
+  String get progressPercentage {
+    final percentage = (progressBasedOn20Hours * 100).toInt();
+    return '$percentage%';
+  }
 }

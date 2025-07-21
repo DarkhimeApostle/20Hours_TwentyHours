@@ -53,7 +53,7 @@ class HomeScreenState extends State<HomeScreen> {
             name: '开始您的第一个技能吧！',
             totalTime: 0,
             icon: Icons.pan_tool_alt_outlined,
-            progress: 0.1,
+            progress: 0.0, // 使用新的进度计算方法
           ),
         ];
       });
