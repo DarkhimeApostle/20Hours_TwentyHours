@@ -4,6 +4,9 @@ import 'package:TwentyHours/screens/add_skill_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
 import 'package:TwentyHours/screens/promotion_screen.dart';
 import '../main.dart';
+import 'package:TwentyHours/screens/settings_screen.dart';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 统计页面，暂未实现具体功能
 class StatsScreen extends StatelessWidget {
@@ -16,14 +19,14 @@ class StatsScreen extends StatelessWidget {
 }
 
 // 设置页面，暂未实现具体功能
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('设置页面（待开发）'));
-  }
-}
+// class SettingsScreen extends StatelessWidget {
+//   const SettingsScreen({super.key});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Center(child: Text('设置页面（待开发）'));
+//   }
+// }
 
 // 应用主页面，包含底部导航栏和页面切换逻辑
 class RootScreen extends StatefulWidget {
@@ -45,6 +48,17 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   // 页面列表
   late final List<Widget> _widgetOptions;
 
+  // 跳转到设置页面并监听返回结果
+  Future<void> _onSettingsTapped() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+    if (result == true) {
+      _loadUserImages();
+    }
+  }
+
   // 动画控制器
   late AnimationController _animationController;
   late AnimationController _stripeAnimationController;
@@ -55,6 +69,9 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   // 条纹间距
   final double stripeSpacing = 10.0;
 
+  String? _avatarPath;
+  String? _drawerBgPath;
+
   // 初始化页面列表
   @override
   void initState() {
@@ -62,7 +79,13 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     _widgetOptions = <Widget>[
       HomeScreen(key: _homeScreenKey),
       const PromotionScreen(),
-      const SettingsScreen(),
+      Builder(
+        builder: (context) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _onSettingsTapped,
+          child: const SettingsScreen(),
+        ),
+      ),
     ];
 
     // 初始化动画控制器
@@ -80,6 +103,22 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     // 启动动画
     _animationController.forward();
     _stripeAnimationController.repeat(); // 条纹动画持续循环
+    _loadUserImages();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadUserImages();
+  }
+
+  // 加载自定义头像和背景路径
+  Future<void> _loadUserImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _avatarPath = prefs.getString('user_avatar_path');
+      _drawerBgPath = prefs.getString('drawer_bg_path');
+    });
   }
 
   // 切换底部导航栏页面
@@ -122,6 +161,25 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     }
   }
 
+  Widget buildUserAvatar(String? avatarPath, {double radius = 40}) {
+    if (avatarPath != null &&
+        avatarPath.isNotEmpty &&
+        File(avatarPath).existsSync()) {
+      return CircleAvatar(
+        backgroundImage: FileImage(File(avatarPath)),
+        radius: radius,
+      );
+    } else {
+      return CircleAvatar(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? kPrimaryColor.withOpacity(0.85)
+            : kPrimaryColor,
+        child: Icon(Icons.person, color: Colors.white, size: radius),
+        radius: radius,
+      );
+    }
+  }
+
   // 构建页面UI
   @override
   Widget build(BuildContext context) {
@@ -146,7 +204,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              child: buildUserAvatar(_avatarPath, radius: 20),
             ),
             const SizedBox(width: 12),
             // 用户ID
@@ -192,7 +250,13 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       // 页面内容和悬浮按钮
       body: Stack(
         children: [
-          _widgetOptions[_selectedIndex],
+          _selectedIndex == 2
+              ? GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _onSettingsTapped,
+                  child: _widgetOptions[_selectedIndex],
+                )
+              : _widgetOptions[_selectedIndex],
           // 只在计时页面显示悬浮按钮
           if (_selectedIndex == 0)
             AnimatedOpacity(
@@ -286,18 +350,15 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
-                child: CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                      ? kPrimaryColor.withOpacity(0.85)
-                      : kPrimaryColor,
-                  child: Icon(Icons.person, color: Colors.white, size: 40),
-                ),
+                child: buildUserAvatar(_avatarPath, radius: 40),
               ),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 image: DecorationImage(
-                  image: AssetImage('assets/images/drawer_bg.jpg'),
+                  image: _drawerBgPath != null
+                      ? FileImage(File(_drawerBgPath!))
+                      : const AssetImage('assets/images/drawer_bg.jpg')
+                            as ImageProvider,
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.35),
@@ -367,7 +428,8 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                 ),
               ),
               title: const Text('设置'),
-              onTap: () {
+              onTap: () async {
+                await _onSettingsTapped();
                 _onItemTapped(2);
                 Navigator.pop(context);
               },
