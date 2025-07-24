@@ -15,11 +15,13 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String? _avatarPath;
   String? _drawerBgPath;
+  String _userName = '';
 
   @override
   void initState() {
     super.initState();
     _loadImagePaths();
+    _loadUserName();
   }
 
   // 加载本地保存的图片路径
@@ -29,6 +31,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _avatarPath = prefs.getString('user_avatar_path');
       _drawerBgPath = prefs.getString('drawer_bg_path');
     });
+  }
+
+  // 加载用户名
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name') ?? '开狼';
+    });
+  }
+
+  // 保存用户名
+  Future<void> _saveUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', _userName.trim());
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context, true);
+    }
   }
 
   // 选择图片并保存到本地
@@ -63,6 +82,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          // 用户名设置
+          Center(
+            child: Column(
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: '用户名',
+                    border: OutlineInputBorder(),
+                  ),
+                  controller: TextEditingController(text: _userName),
+                  onChanged: (v) => _userName = v,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: _saveUserName,
+                  child: const Text('保存用户名'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
           // 头像设置
           Center(
             child: Column(

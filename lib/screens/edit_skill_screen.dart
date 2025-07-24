@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
 import 'package:TwentyHours/main.dart';
+import '../models/skill_group.dart';
+import '../utils/group_storage.dart';
+import 'package:uuid/uuid.dart';
+
+// 预设分组颜色（与分组管理页保持一致）
+const List<Color> kGroupColors = [
+  Colors.red,
+  Colors.blue,
+  Colors.green,
+  Colors.orange,
+  Colors.purple,
+  Colors.teal,
+  Colors.amber,
+  Colors.pink,
+  Colors.brown,
+];
 
 class EditSkillScreen extends StatefulWidget {
   final Skill skill;
-  final int skillIndex;
+  final int? skillIndex;
 
-  const EditSkillScreen({
-    super.key,
-    required this.skill,
-    required this.skillIndex,
-  });
+  const EditSkillScreen({super.key, required this.skill, this.skillIndex});
 
   @override
   State<EditSkillScreen> createState() => _EditSkillScreenState();
@@ -27,45 +39,133 @@ class _EditSkillScreenState extends State<EditSkillScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // 可选的图标列表（扩展版）
-  final List<IconData> _availableIcons = [
-    Icons.timer,
-    Icons.school,
-    Icons.work,
-    Icons.fitness_center,
-    Icons.music_note,
-    Icons.book,
-    Icons.code,
-    Icons.brush,
-    Icons.sports_esports,
-    Icons.kitchen,
-    Icons.directions_run,
-    Icons.psychology,
-    Icons.language,
-    Icons.science,
-    Icons.architecture,
-    Icons.medical_services,
-    Icons.computer,
-    Icons.phone_android,
-    Icons.camera_alt,
-    Icons.videocam,
-    Icons.headphones,
-    Icons.gamepad,
-    Icons.sports_soccer,
-    Icons.sports_basketball,
-    Icons.sports_tennis,
-    Icons.sports_volleyball,
-    Icons.sports_cricket,
-    Icons.sports_hockey,
-    Icons.sports_rugby,
-    Icons.sports_martial_arts,
-    Icons.sports_kabaddi,
-    Icons.sports_motorsports,
-    Icons.sports_esports,
-  ];
+// 图标库
+final List<IconData> _availableIcons = [
+  Icons.timer,
+  Icons.school,
+  Icons.work,
+  Icons.fitness_center,
+  Icons.music_note,
+  Icons.book,
+  Icons.code,
+  Icons.brush,
+  Icons.sports_esports,
+  Icons.kitchen,
+  Icons.directions_run,
+  Icons.psychology,
+  Icons.language,
+  Icons.science,
+  Icons.architecture,
+  Icons.medical_services,
+  Icons.computer,
+  Icons.phone_android,
+  Icons.camera_alt,
+  Icons.videocam,
+  Icons.headphones,
+  Icons.gamepad,
+  Icons.sports_soccer,
+  Icons.sports_basketball,
+  Icons.sports_tennis,
+  Icons.sports_volleyball,
+  Icons.sports_cricket,
+  Icons.sports_hockey,
+  Icons.sports_rugby,
+  Icons.sports_martial_arts,
+  Icons.sports_kabaddi,
+  Icons.sports_motorsports,
+  Icons.sports_esports,
+  Icons.palette,
+  Icons.coffee,
+  Icons.restaurant,
+  Icons.flight,
+  Icons.train,
+  Icons.directions_bike,
+  Icons.nature,
+  Icons.pets,
+  Icons.child_care,
+  Icons.emoji_nature,
+  Icons.emoji_objects,
+  Icons.emoji_people,
+  Icons.emoji_food_beverage,
+  Icons.emoji_transportation,
+  Icons.emoji_emotions,
+  Icons.emoji_symbols,
+  Icons.emoji_flags,
+  Icons.star,
+  Icons.favorite,
+  Icons.lightbulb,
+  Icons.eco,
+  Icons.public,
+  Icons.wb_sunny,
+  Icons.nights_stay,
+  Icons.park,
+  Icons.spa,
+  Icons.pool,
+  Icons.beach_access,
+  Icons.icecream,
+  Icons.cake,
+  Icons.local_florist,
+  Icons.local_cafe,
+  Icons.local_bar,
+  Icons.local_dining,
+  Icons.local_pizza,
+  Icons.local_play,
+  Icons.movie,
+  Icons.tv,
+  Icons.radio,
+  Icons.bookmark,
+  Icons.library_books,
+  Icons.menu_book,
+  Icons.auto_stories,
+  Icons.sports_golf,
+  Icons.sports_handball,
+  Icons.sports_baseball,
+  Icons.sports_football,
+  Icons.sports,
+  Icons.surfing,
+  Icons.hiking,
+  Icons.bolt,
+  Icons.bubble_chart,
+  Icons.casino,
+  Icons.color_lens,
+  Icons.extension,
+  Icons.face,
+  Icons.flash_on,
+  Icons.gesture,
+  Icons.golf_course,
+  Icons.hdr_strong,
+  Icons.light_mode,
+  Icons.nightlight,
+  Icons.rocket,
+  Icons.sailing,
+  Icons.snowboarding,
+  Icons.snowshoeing,
+  Icons.sports_bar,
+  Icons.sports_gymnastics,
+  Icons.sports_mma,
+  Icons.theater_comedy,
+  Icons.toys,
+  Icons.travel_explore,
+  Icons.volunteer_activism,
+  Icons.water,
+  Icons.waves,
+  Icons.wind_power,
+];
 
-  IconData _selectedIcon = Icons.timer;
-  bool _isLoading = false;
+// 6种主色
+final List<Color> _iconColors = [
+  Color(0xFF2563EB), // 蓝
+  Color(0xFFF59E42), // 橙
+  Color(0xFF10B981), // 绿
+  Color(0xFFEF4444), // 红
+  Color(0xFF8B5CF6), // 紫
+  Color(0xFF14B8A6), // 青
+];
+Color _selectedIconColor = Color(0xFF2563EB);
+
+IconData _selectedIcon = Icons.timer;
+bool _isLoading = false;
+  // 不恢复 _inHallOfGlory 变量，直接在按钮点击时赋值
 
   @override
   void initState() {
@@ -77,6 +177,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
   void _initializeControllers() {
     _nameController = TextEditingController(text: widget.skill.name);
     _selectedIcon = widget.skill.icon;
+    _selectedIconColor = Color(widget.skill.iconColor);
 
     // 将总秒数转换为小时、分钟
     final totalSeconds = widget.skill.totalTime;
@@ -150,10 +251,13 @@ class _EditSkillScreenState extends State<EditSkillScreen>
 
       // 创建更新后的技能
       final updatedSkill = Skill(
+        id: widget.skill.id.isNotEmpty ? widget.skill.id : Uuid().v4(),
         name: _nameController.text.trim(),
         totalTime: totalSeconds,
         icon: _selectedIcon,
         progress: widget.skill.progress, // 保持原有进度
+        inHallOfGlory: widget.skill.inHallOfGlory,
+        iconColor: _selectedIconColor.value,
       );
 
       // 返回更新结果
@@ -235,7 +339,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('编辑技能'),
+        title: Text(widget.skillIndex == null ? '添加技能' : '编辑技能'),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
@@ -251,96 +355,89 @@ class _EditSkillScreenState extends State<EditSkillScreen>
             slivers: [
               // 技能图标选择区域
               SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.palette,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '选择图标',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? kTextMainDark
-                                  : kTextMain,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 8,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                        itemCount: _availableIcons.length,
-                        itemBuilder: (context, index) {
-                          final icon = _availableIcons[index];
-                          final isSelected = _selectedIcon == icon;
-
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedIcon = icon),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).brightness ==
-                                          Brightness.dark
-                                    ? kIconBgDark
-                                    : kIconBgLight,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Icon(
-                                icon,
-                                color: isSelected
-                                    ? Colors.white
-                                    : Theme.of(context).brightness ==
-                                          Brightness.dark
-                                    ? kTextMainDark
-                                    : kPrimaryColor,
-                                size: 24,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+  child: Container(
+    margin: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: ExpansionTile(
+      title: Row(
+        children: [
+          Icon(Icons.palette, color: Theme.of(context).colorScheme.primary, size: 24),
+          const SizedBox(width: 12),
+          Text('选择图标和颜色', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kTextMain)),
+        ],
+      ),
+      initiallyExpanded: false,
+      children: [
+        // 颜色选择器
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: _iconColors.map((color) {
+            final isSelected = _selectedIconColor == color;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedIconColor = color),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: isSelected ? Border.all(width: 3, color: Colors.black) : null,
+                ),
+                child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        // 图标选择网格
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 8,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _availableIcons.length,
+          itemBuilder: (context, index) {
+            final icon = _availableIcons[index];
+            final isSelected = _selectedIcon == icon;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedIcon = icon),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected ? _selectedIconColor : (Theme.of(context).brightness == Brightness.dark ? kIconBgDark : kIconBgLight),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? _selectedIconColor : Colors.grey.shade300,
+                    width: isSelected ? 2 : 1,
                   ),
                 ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : _selectedIconColor,
+                  size: 24,
+                ),
               ),
+            );
+          },
+        ),
+      ],
+    ),
+  ),
+),
 
               // 技能名称编辑区域
               SliverToBoxAdapter(
@@ -658,6 +755,37 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                   ),
                 ),
               ),
+
+              // 恢复底部“完成技能并移入荣耀殿堂”按钮
+              // SliverToBoxAdapter(
+              //   child: Container(
+              //     margin: const EdgeInsets.all(16),
+              //     child: ElevatedButton.icon(
+              //       icon: const Icon(Icons.emoji_events, color: Colors.amber),
+              //       label: const Text('完成技能并移入荣耀殿堂'),
+              //       style: ElevatedButton.styleFrom(
+              //         backgroundColor: Colors.amber,
+              //         foregroundColor: Colors.white,
+              //         minimumSize: const Size.fromHeight(44),
+              //       ),
+              //       onPressed: () async {
+              //         // 保存技能并返回，inHallOfGlory 设为 true
+              //         final updatedSkill = Skill(
+              //           name: _nameController.text,
+              //           totalTime: _getSliderValue().toInt(),
+              //           icon: _selectedIcon,
+              //           progress: widget.skill.progress,
+              //           inHallOfGlory: true,
+              //         );
+              //         Navigator.of(context).pop({
+              //           'action': 'save',
+              //           'skillIndex': widget.skillIndex,
+              //           'skill': updatedSkill,
+              //         });
+              //       },
+              //     ),
+              //   ),
+              // ),
 
               // 底部间距
               const SliverToBoxAdapter(child: SizedBox(height: 32)),

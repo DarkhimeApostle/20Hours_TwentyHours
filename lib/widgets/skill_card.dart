@@ -222,12 +222,10 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                 ),
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  widget.skill.icon,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
-                      : kPrimaryColor,
-                  size: 24,
-                ),
+  widget.skill.icon,
+  color: Color(widget.skill.iconColor),
+  size: 24,
+),
               ),
               const SizedBox(width: 16),
               // 技能名称和进度条

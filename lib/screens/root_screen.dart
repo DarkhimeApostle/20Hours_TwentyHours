@@ -1,12 +1,155 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/screens/home_screen.dart';
-import 'package:TwentyHours/screens/add_skill_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
 import 'package:TwentyHours/screens/promotion_screen.dart';
 import '../main.dart';
 import 'package:TwentyHours/screens/settings_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:TwentyHours/models/skill_model.dart';
+import 'package:TwentyHours/screens/edit_skill_screen.dart';
+import 'hall_of_glory_screen.dart';
+import 'package:uuid/uuid.dart';
+
+
+
+// 主页面专属AppBar title组件
+class MainAppBarTitle extends StatelessWidget {
+  final String? avatarPath;
+  final String userName;
+  const MainAppBarTitle({Key? key, required this.avatarPath, required this.userName}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? kPrimaryColor.withOpacity(0.85)
+                : kPrimaryColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: (avatarPath != null && avatarPath!.isNotEmpty && File(avatarPath!).existsSync())
+              ? CircleAvatar(backgroundImage: FileImage(File(avatarPath!)), radius: 20)
+              : CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.person, color: Colors.white, size: 20)),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              userName,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kTextMain,
+              ),
+            ),
+            Text(
+              'linziyan@example.com',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).brightness == Brightness.dark ? kTextSubDark : kTextSub,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// 主页面专属Drawer组件
+class MainDrawer extends StatelessWidget {
+  final String userName;
+  final String? avatarPath;
+  final String? drawerBgPath;
+  final VoidCallback onStatsTap;
+  final VoidCallback onSettingsTap;
+  const MainDrawer({Key? key, required this.userName, required this.avatarPath, required this.drawerBgPath, required this.onStatsTap, required this.onSettingsTap}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Theme.of(context).cardColor,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            accountName: Text(
+              userName,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            accountEmail: const Text("linziyan@example.com", style: TextStyle(color: Colors.white70)),
+            currentAccountPicture: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                ],
+              ),
+              child: (avatarPath != null && avatarPath!.isNotEmpty && File(avatarPath!).existsSync())
+                  ? CircleAvatar(backgroundImage: FileImage(File(avatarPath!)), radius: 40)
+                  : CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.person, color: Colors.white, size: 40)),
+            ),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              image: DecorationImage(
+                image: drawerBgPath != null && drawerBgPath!.isNotEmpty && File(drawerBgPath!).existsSync()
+                    ? FileImage(File(drawerBgPath!))
+                    : const AssetImage('assets/images/drawer_bg.jpg') as ImageProvider,
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.35), BlendMode.darken),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.star, color: Colors.amber),
+            title: const Text('荣耀殿堂'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const HallOfGloryScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark ? kIconBgDark : kIconBgLight,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(6),
+              child: Icon(Icons.bar_chart, color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kPrimaryColor),
+            ),
+            title: const Text('统计'),
+            onTap: onStatsTap,
+          ),
+          ListTile(
+            leading: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark ? kIconBgDark : kIconBgLight,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(6),
+              child: Icon(Icons.settings, color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kPrimaryColor),
+            ),
+            title: const Text('设置'),
+            onTap: onSettingsTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // 统计页面，暂未实现具体功能
 class StatsScreen extends StatelessWidget {
@@ -56,6 +199,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     );
     if (result == true) {
       _loadUserImages();
+      _loadUserName();
     }
   }
 
@@ -71,6 +215,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   String? _avatarPath;
   String? _drawerBgPath;
+  String _userName = '开狼';
 
   // 初始化页面列表
   @override
@@ -104,6 +249,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     _animationController.forward();
     _stripeAnimationController.repeat(); // 条纹动画持续循环
     _loadUserImages();
+    _loadUserName();
   }
 
   @override
@@ -121,6 +267,14 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     });
   }
 
+  // 加载用户名
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name') ?? '开狼';
+    });
+  }
+
   // 切换底部导航栏页面
   void _onItemTapped(int index) {
     setState(() {
@@ -128,14 +282,28 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     });
   }
 
-  // 跳转到添加技能页面
+  // 跳转到添加技能页面（只用EditSkillScreen）
   void _onAddSkillPressed() async {
-    final newSkillName = await Navigator.push<String>(
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(builder: (context) => const AddSkillScreen()),
+      MaterialPageRoute(
+        builder: (context) => EditSkillScreen(
+          skill: Skill(
+            id: Uuid().v4(),
+            name: '',
+            totalTime: 0,
+            icon: Icons.star_border,
+            progress: 0.0,
+          ),
+          skillIndex: null,
+        ),
+      ),
     );
-    if (newSkillName != null && newSkillName.isNotEmpty) {
-      _homeScreenKey.currentState?.addSkill(newSkillName);
+    if (result != null && result['action'] == 'save') {
+      _homeScreenKey.currentState?.setState(() {
+        _homeScreenKey.currentState?.skills.add(result['skill']);
+      });
+      _homeScreenKey.currentState?.saveSkills(); // 调用公有方法
     }
   }
 
@@ -185,67 +353,26 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            // 用户头像
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kPrimaryColor.withOpacity(0.85)
-                    : kPrimaryColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: buildUserAvatar(_avatarPath, radius: 20),
-            ),
-            const SizedBox(width: 12),
-            // 用户ID
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '开狼',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? kTextMainDark
-                        : kTextMain,
-                  ),
-                ),
-                Text(
-                  'linziyan@example.com',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? kTextSubDark
-                        : kTextSub,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
+  title: _selectedIndex == 0
+      ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
+      : (_selectedIndex == 1
+          ? const Text('统计')
+          : _selectedIndex == 2
+              ? const Text('设置')
+              : null),
+  actions: _selectedIndex == 0
+      ? [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _onAddSkillPressed,
             tooltip: '添加新技能',
           ),
-        ],
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: 0,
-        toolbarHeight: 80, // 增加工具栏高度
-      ),
+        ]
+      : null,
+  backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+  elevation: 0,
+  toolbarHeight: _selectedIndex == 0 ? 80 : kToolbarHeight,
+),
 
       // 页面内容和悬浮按钮
       body: Stack(
@@ -272,7 +399,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 30),
+                    padding: const EdgeInsets.only(bottom: 20),
                     child: Container(
                       height: 120,
                       width: 120,
@@ -321,122 +448,22 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
         ],
       ),
 
-      // 侧边抽屉菜单
-      drawer: Drawer(
-        backgroundColor: Theme.of(context).cardColor,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: const Text(
-                "开狼",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              accountEmail: const Text(
-                "linziyan@example.com",
-                style: TextStyle(color: Colors.white70),
-              ),
-              currentAccountPicture: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: buildUserAvatar(_avatarPath, radius: 40),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                image: DecorationImage(
-                  image: _drawerBgPath != null
-                      ? FileImage(File(_drawerBgPath!))
-                      : const AssetImage('assets/images/drawer_bg.jpg')
-                            as ImageProvider,
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.35),
-                    BlendMode.darken,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kIconBgDark
-                      : kIconBgLight,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.timer,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
-                      : kPrimaryColor,
-                ),
-              ),
-              title: const Text('计时'),
-              onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kIconBgDark
-                      : kIconBgLight,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
-                      : kPrimaryColor,
-                ),
-              ),
-              title: const Text('统计'),
-              onTap: () {
-                _onItemTapped(1);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kIconBgDark
-                      : kIconBgLight,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.settings,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
-                      : kPrimaryColor,
-                ),
-              ),
-              title: const Text('设置'),
-              onTap: () async {
-                await _onSettingsTapped();
-                _onItemTapped(2);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
+drawer: _selectedIndex == 0
+    ? MainDrawer(
+        userName: _userName,
+        avatarPath: _avatarPath,
+        drawerBgPath: _drawerBgPath,
+        onStatsTap: () {
+          _onItemTapped(1);
+          Navigator.pop(context);
+        },
+        onSettingsTap: () async {
+          await _onSettingsTapped();
+          _onItemTapped(2);
+          Navigator.pop(context);
+        },
+      )
+    : null,
 
       // 底部导航栏，切换不同页面
       bottomNavigationBar: Container(

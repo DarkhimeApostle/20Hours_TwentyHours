@@ -61,13 +61,25 @@ class _SkillDetailsScreenState extends State<SkillDetailsScreen> {
   // 导出日记为txt文件
   Future<void> _exportDiary() async {
     if (_diaryList.isEmpty) return;
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${widget.skill.name}_diary.txt');
+    String? exportPath;
+    // Android下保存到Downloads目录
+    try {
+      final downloadsDir = Directory('/storage/emulated/0/Download');
+      if (await downloadsDir.exists()) {
+        exportPath = '${downloadsDir.path}/${widget.skill.name}_diary.txt';
+      }
+    } catch (e) {}
+    // 兜底：如无权限或找不到则用应用目录
+    if (exportPath == null) {
+      final dir = await getApplicationDocumentsDirectory();
+      exportPath = '${dir.path}/${widget.skill.name}_diary.txt';
+    }
+    final file = File(exportPath);
     final content = _diaryList.join('\n');
     await file.writeAsString(content);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('已导出到: ${file.path}')));
+    ).showSnackBar(SnackBar(content: Text('已导出到: $exportPath')));
   }
 
   // 导入txt文件为日记

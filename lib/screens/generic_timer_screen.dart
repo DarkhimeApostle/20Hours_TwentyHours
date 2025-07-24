@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+// import 'package:audioplayers/audioplayers.dart'; // 移除音效播放器相关依赖
 import 'package:TwentyHours/models/skill_model.dart';
 import 'package:TwentyHours/main.dart';
 
@@ -24,10 +24,9 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   // 是否正在计时
   bool _isTimerRunning = false;
 
-  // 音效播放器
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  // 音效播放状态
-  bool _isTickPlaying = false;
+  // 移除音效播放器相关变量
+  // final AudioPlayer _audioPlayer = AudioPlayer();
+  // bool _isTickPlaying = false;
 
   List<Skill> _skills = [];
 
@@ -48,7 +47,7 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   void dispose() {
     _timer?.cancel();
     _stopwatch.stop();
-    _audioPlayer.dispose();
+    // _audioPlayer.dispose(); // 移除音效播放器释放
     super.dispose();
   }
 
@@ -72,10 +71,10 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
         setState(() {
           _displayTime = _formatTime(_stopwatch.elapsed);
         });
-        // 每秒整点播放一次音效
-        if (_stopwatch.elapsedMilliseconds % 1000 < 60) {
-          _playTickSound();
-        }
+        // 移除每秒播放音效
+        // if (_stopwatch.elapsedMilliseconds % 1000 < 60) {
+        //   _playTickSound();
+        // }
       }
     });
   }
@@ -84,22 +83,11 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   void _stopTimer() {
     _stopwatch.stop();
     _timer?.cancel();
-    _audioPlayer.stop();
+    // _audioPlayer.stop(); // 移除音效播放器停止
   }
 
-  // 播放滴答音效
-  Future<void> _playTickSound() async {
-    try {
-      if (!_isTickPlaying) {
-        _isTickPlaying = true;
-        await _audioPlayer.play(AssetSource('tick_cold.MP3'), volume: 0.18);
-        _isTickPlaying = false;
-      }
-    } catch (e) {
-      debugPrint('Tick sound error: $e');
-      _isTickPlaying = false;
-    }
-  }
+  // 移除音效相关方法
+  // Future<void> _playTickSound() async { ... }
 
   // 格式化时间显示
   String _formatTime(Duration duration) {
@@ -107,6 +95,18 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  // 格式化时间显示，返回主时间和毫秒部分
+  List<String> _formatTimeParts(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    String oneDigitMillis = (duration.inMilliseconds % 1000 ~/ 100).toString();
+    return [
+      "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds",
+      ".$oneDigitMillis",
+    ];
   }
 
   // 结束计时
@@ -137,6 +137,7 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final timeParts = _formatTimeParts(_stopwatch.elapsed);
     return Scaffold(
       appBar: AppBar(title: const Text('计时中')),
       body: Center(
@@ -155,13 +156,29 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
                     width: 150,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(
-                        _displayTime,
+                      child: RichText(
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 54,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 2,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: timeParts[0],
+                              style: const TextStyle(
+                                fontSize: 54,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2,
+                                color: Colors.black,
+                              ),
+                            ),
+                            TextSpan(
+                              text: timeParts[1],
+                              style: const TextStyle(
+                                fontSize: 27, // 一半字号
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -224,13 +241,13 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
+        width: MediaQuery.of(context).size.width * 0.8, // 缩小宽度
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          maxHeight: MediaQuery.of(context).size.height * 0.6, // 缩小高度
         ),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16), // 缩小内边距
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,14 +258,14 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                 Icon(
                   Icons.timer,
                   color: Theme.of(context).colorScheme.primary,
-                  size: 28,
+                  size: 24, // 缩小图标
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '选择归属技能',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 20, // 缩小标题字号
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? kTextMainDark
@@ -258,17 +275,17 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               '本次计时：${_formatDuration(widget.duration)}',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 13, // 缩小副标题字号
                 color: Theme.of(context).brightness == Brightness.dark
                     ? kTextSubDark
                     : kTextSub,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // 技能列表
             if (widget.skills.isEmpty)
@@ -276,7 +293,7 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
             else
               Expanded(child: _buildSkillsList()),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // 按钮区域
             Row(
@@ -285,15 +302,15 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('取消', style: TextStyle(fontSize: 16)),
+                    child: const Text('取消', style: TextStyle(fontSize: 14)),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _selectedIndex == null
@@ -302,12 +319,12 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                             context,
                           ).pop({'skillIndex': _selectedIndex}),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('确认归属', style: TextStyle(fontSize: 16)),
+                    child: const Text('确认归属', style: TextStyle(fontSize: 14)),
                   ),
                 ),
               ],
@@ -345,7 +362,7 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
     return ListView.separated(
       shrinkWrap: true,
       itemCount: widget.skills.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 8), // 缩小间距
       itemBuilder: (context, index) {
         final skill = widget.skills[index];
         final isSelected = _selectedIndex == index;
@@ -353,9 +370,9 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
         return Container(
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12), // 缩小圆角
             border: Border.all(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
@@ -366,16 +383,16 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               onTap: () => setState(() => _selectedIndex = index),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(12), // 缩小内边距
                 child: Row(
                   children: [
                     // 选择指示器
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 18,
+                      height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isSelected
@@ -386,11 +403,11 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                           ? const Icon(
                               Icons.check,
                               color: Colors.white,
-                              size: 16,
+                              size: 12,
                             )
                           : null,
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 10),
 
                     // 技能信息
                     Expanded(
@@ -400,7 +417,7 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                           Text(
                             skill.name,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 15, // 缩小主字号
                               fontWeight: FontWeight.w600,
                               color: isSelected
                                   ? Theme.of(context).colorScheme.primary
@@ -410,11 +427,11 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                                         : kTextMain),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             '总计时：${skill.formattedTime}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 12, // 缩小副字号
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
@@ -425,11 +442,10 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                         ],
                       ),
                     ),
-
                     // 箭头图标
                     Icon(
                       Icons.arrow_forward_ios,
-                      size: 16,
+                      size: 12, // 缩小箭头
                       color: Colors.grey.shade400,
                     ),
                   ],
