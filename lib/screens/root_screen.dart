@@ -11,13 +11,15 @@ import 'package:TwentyHours/screens/edit_skill_screen.dart';
 import 'hall_of_glory_screen.dart';
 import 'package:uuid/uuid.dart';
 
-
-
 // 主页面专属AppBar title组件
 class MainAppBarTitle extends StatelessWidget {
   final String? avatarPath;
   final String userName;
-  const MainAppBarTitle({Key? key, required this.avatarPath, required this.userName}) : super(key: key);
+  const MainAppBarTitle({
+    Key? key,
+    required this.avatarPath,
+    required this.userName,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -38,9 +40,18 @@ class MainAppBarTitle extends StatelessWidget {
               ),
             ],
           ),
-          child: (avatarPath != null && avatarPath!.isNotEmpty && File(avatarPath!).existsSync())
-              ? CircleAvatar(backgroundImage: FileImage(File(avatarPath!)), radius: 20)
-              : CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.person, color: Colors.white, size: 20)),
+          child:
+              (avatarPath != null &&
+                  avatarPath!.isNotEmpty &&
+                  File(avatarPath!).existsSync())
+              ? CircleAvatar(
+                  backgroundImage: FileImage(File(avatarPath!)),
+                  radius: 20,
+                )
+              : CircleAvatar(
+                  backgroundColor: Colors.transparent,
+                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                ),
         ),
         const SizedBox(width: 12),
         Column(
@@ -52,14 +63,18 @@ class MainAppBarTitle extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kTextMain,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
               ),
             ),
             Text(
               'linziyan@example.com',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).brightness == Brightness.dark ? kTextSubDark : kTextSub,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextSubDark
+                    : kTextSub,
               ),
             ),
           ],
@@ -76,7 +91,16 @@ class MainDrawer extends StatelessWidget {
   final String? drawerBgPath;
   final VoidCallback onStatsTap;
   final VoidCallback onSettingsTap;
-  const MainDrawer({Key? key, required this.userName, required this.avatarPath, required this.drawerBgPath, required this.onStatsTap, required this.onSettingsTap}) : super(key: key);
+  final VoidCallback? onRefreshHome; // 添加刷新回调
+  const MainDrawer({
+    Key? key,
+    required this.userName,
+    required this.avatarPath,
+    required this.drawerBgPath,
+    required this.onStatsTap,
+    required this.onSettingsTap,
+    this.onRefreshHome, // 添加刷新回调参数
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -87,48 +111,85 @@ class MainDrawer extends StatelessWidget {
           UserAccountsDrawerHeader(
             accountName: Text(
               userName,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            accountEmail: const Text("linziyan@example.com", style: TextStyle(color: Colors.white70)),
+            accountEmail: const Text(
+              "linziyan@example.com",
+              style: TextStyle(color: Colors.white70),
+            ),
             currentAccountPicture: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
-              child: (avatarPath != null && avatarPath!.isNotEmpty && File(avatarPath!).existsSync())
-                  ? CircleAvatar(backgroundImage: FileImage(File(avatarPath!)), radius: 40)
-                  : CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.person, color: Colors.white, size: 40)),
+              child:
+                  (avatarPath != null &&
+                      avatarPath!.isNotEmpty &&
+                      File(avatarPath!).existsSync())
+                  ? CircleAvatar(
+                      backgroundImage: FileImage(File(avatarPath!)),
+                      radius: 40,
+                    )
+                  : CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      child: Icon(Icons.person, color: Colors.white, size: 40),
+                    ),
             ),
             decoration: BoxDecoration(
               color: Colors.transparent,
               image: DecorationImage(
-                image: drawerBgPath != null && drawerBgPath!.isNotEmpty && File(drawerBgPath!).existsSync()
+                image:
+                    drawerBgPath != null &&
+                        drawerBgPath!.isNotEmpty &&
+                        File(drawerBgPath!).existsSync()
                     ? FileImage(File(drawerBgPath!))
-                    : const AssetImage('assets/images/drawer_bg.jpg') as ImageProvider,
+                    : const AssetImage('assets/images/drawer_bg.jpg')
+                          as ImageProvider,
                 fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.35), BlendMode.darken),
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.35),
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.star, color: Colors.amber),
             title: const Text('荣耀殿堂'),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const HallOfGloryScreen()),
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const HallOfGloryScreen(),
+                ),
               );
+              // 从荣耀殿堂返回后，刷新主界面数据
+              onRefreshHome?.call();
             },
           ),
           ListTile(
             leading: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? kIconBgDark : kIconBgLight,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kIconBgDark
+                    : kIconBgLight,
                 shape: BoxShape.circle,
               ),
               padding: const EdgeInsets.all(6),
-              child: Icon(Icons.bar_chart, color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kPrimaryColor),
+              child: Icon(
+                Icons.bar_chart,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kPrimaryColor,
+              ),
             ),
             title: const Text('统计'),
             onTap: onStatsTap,
@@ -136,11 +197,18 @@ class MainDrawer extends StatelessWidget {
           ListTile(
             leading: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? kIconBgDark : kIconBgLight,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kIconBgDark
+                    : kIconBgLight,
                 shape: BoxShape.circle,
               ),
               padding: const EdgeInsets.all(6),
-              child: Icon(Icons.settings, color: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kPrimaryColor),
+              child: Icon(
+                Icons.settings,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kPrimaryColor,
+              ),
             ),
             title: const Text('设置'),
             onTap: onSettingsTap,
@@ -161,16 +229,6 @@ class StatsScreen extends StatelessWidget {
   }
 }
 
-// 设置页面，暂未实现具体功能
-// class SettingsScreen extends StatelessWidget {
-//   const SettingsScreen({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Center(child: Text('设置页面（待开发）'));
-//   }
-// }
-
 // 应用主页面，包含底部导航栏和页面切换逻辑
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
@@ -188,19 +246,19 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   final GlobalKey<HomeScreenState> _homeScreenKey =
       GlobalKey<HomeScreenState>();
 
-  // 页面列表
-  late final List<Widget> _widgetOptions;
+  // 添加Scaffold的GlobalKey
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // 页面列表 - 使用IndexedStack保持状态
+  late final List<Widget> _pages;
 
   // 跳转到设置页面并监听返回结果
   Future<void> _onSettingsTapped() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
-    if (result == true) {
-      _loadUserImages();
-      _loadUserName();
-    }
+    // 移除自动刷新逻辑，用户需要手动重启应用
   }
 
   // 动画控制器
@@ -221,15 +279,15 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _widgetOptions = <Widget>[
+
+    // 初始化页面列表 - 只创建一次，避免重新创建
+    _pages = [
       HomeScreen(key: _homeScreenKey),
       const PromotionScreen(),
-      Builder(
-        builder: (context) => GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _onSettingsTapped,
-          child: const SettingsScreen(),
-        ),
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _onSettingsTapped,
+        child: const SettingsScreen(),
       ),
     ];
 
@@ -258,6 +316,16 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     _loadUserImages();
   }
 
+  // 添加页面激活监听
+  @override
+  void didUpdateWidget(RootScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 当widget更新时，如果当前在主界面，刷新数据
+    if (_selectedIndex == 0) {
+      _homeScreenKey.currentState?.loadSkills();
+    }
+  }
+
   // 加载自定义头像和背景路径
   Future<void> _loadUserImages() async {
     final prefs = await SharedPreferences.getInstance();
@@ -280,6 +348,11 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     setState(() {
       _selectedIndex = index;
     });
+
+    // 如果切换到主界面，刷新数据
+    if (index == 0) {
+      _homeScreenKey.currentState?.loadSkills();
+    }
   }
 
   // 跳转到添加技能页面（只用EditSkillScreen）
@@ -292,7 +365,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
             id: Uuid().v4(),
             name: '',
             totalTime: 0,
-            icon: Icons.star_border,
+            iconCodePoint: Icons.star_border.codePoint,
             progress: 0.0,
           ),
           skillIndex: null,
@@ -352,118 +425,135 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // 添加key
       appBar: AppBar(
-  title: _selectedIndex == 0
-      ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
-      : (_selectedIndex == 1
-          ? const Text('统计')
-          : _selectedIndex == 2
-              ? const Text('设置')
-              : null),
-  actions: _selectedIndex == 0
-      ? [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _onAddSkillPressed,
-            tooltip: '添加新技能',
-          ),
-        ]
-      : null,
-  backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-  elevation: 0,
-  toolbarHeight: _selectedIndex == 0 ? 80 : kToolbarHeight,
-),
+        title: _selectedIndex == 0
+            ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
+            : (_selectedIndex == 1
+                  ? const Text('统计')
+                  : _selectedIndex == 2
+                  ? const Text('设置')
+                  : null),
+        actions: _selectedIndex == 0
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _onAddSkillPressed,
+                  tooltip: '添加新技能',
+                ),
+              ]
+            : null,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: 0,
+        toolbarHeight: _selectedIndex == 0 ? 80 : kToolbarHeight,
+      ),
 
       // 页面内容和悬浮按钮
-      body: Stack(
-        children: [
-          _selectedIndex == 2
-              ? GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _onSettingsTapped,
-                  child: _widgetOptions[_selectedIndex],
-                )
-              : _widgetOptions[_selectedIndex],
-          // 只在计时页面显示悬浮按钮
-          if (_selectedIndex == 0)
-            AnimatedOpacity(
-              opacity: _selectedIndex == 0 ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                transform: Matrix4.translationValues(
-                  0,
-                  _selectedIndex == 0 ? 0 : 50,
-                  0,
-                ),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: Container(
-                      height: 120,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? kButtonDark
-                            : kButtonLight,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+      body: _selectedIndex == 0
+          ? GestureDetector(
+              onHorizontalDragEnd: (details) {
+                // 检测右滑手势
+                if (details.primaryVelocity! > 0) {
+                  _scaffoldKey.currentState?.openDrawer();
+                }
+              },
+              child: Stack(
+                children: [
+                  // 使用IndexedStack保持页面状态，避免重新创建
+                  IndexedStack(index: _selectedIndex, children: _pages),
+                  // 只在计时页面显示悬浮按钮
+                  AnimatedOpacity(
+                    opacity: _selectedIndex == 0 ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      transform: Matrix4.translationValues(
+                        0,
+                        _selectedIndex == 0 ? 0 : 50,
+                        0,
                       ),
-                      child: RawMaterialButton(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        onPressed: _onTimerButtonPressed,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? kIconBgDark
-                                : kIconBgLight,
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(18),
-                          child: Icon(
-                            Icons.timer_outlined,
-                            size: 43,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? kTextMainDark
-                                : kPrimaryColor,
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: Container(
+                            height: 120,
+                            width: 120,
+                            decoration: BoxDecoration(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kButtonDark
+                                  : kButtonLight,
+                              borderRadius: BorderRadius.circular(40),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: RawMaterialButton(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              onPressed: _onTimerButtonPressed,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? kIconBgDark
+                                      : kIconBgLight,
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(18),
+                                child: Icon(
+                                  Icons.timer_outlined,
+                                  size: 43,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? kTextMainDark
+                                      : kPrimaryColor,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
+            )
+          : Stack(
+              children: [
+                // 使用IndexedStack保持页面状态，避免重新创建
+                IndexedStack(index: _selectedIndex, children: _pages),
+              ],
             ),
-        ],
-      ),
 
-drawer: _selectedIndex == 0
-    ? MainDrawer(
-        userName: _userName,
-        avatarPath: _avatarPath,
-        drawerBgPath: _drawerBgPath,
-        onStatsTap: () {
-          _onItemTapped(1);
-          Navigator.pop(context);
-        },
-        onSettingsTap: () async {
-          await _onSettingsTapped();
-          _onItemTapped(2);
-          Navigator.pop(context);
-        },
-      )
-    : null,
+      drawer: _selectedIndex == 0
+          ? MainDrawer(
+              userName: _userName,
+              avatarPath: _avatarPath,
+              drawerBgPath: _drawerBgPath,
+              onStatsTap: () {
+                _onItemTapped(1);
+                Navigator.pop(context);
+              },
+              onSettingsTap: () async {
+                await _onSettingsTapped();
+                _onItemTapped(2);
+                Navigator.pop(context);
+              },
+              onRefreshHome: () {
+                _homeScreenKey.currentState?.loadSkills();
+              },
+            )
+          : null,
 
       // 底部导航栏，切换不同页面
       bottomNavigationBar: Container(

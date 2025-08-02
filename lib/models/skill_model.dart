@@ -6,7 +6,7 @@ class Skill {
   final String id; // 新增唯一id
   final String name; // 技能名称
   final int totalTime; // 技能累计时长，单位秒
-  final IconData icon; // 技能对应的图标
+  final int iconCodePoint; // 图标的codePoint
   final double progress; // 技能进度，范围0.0~1.0
   final String? groupId; // 技能分组ID，null表示未分组
   final bool inHallOfGlory;
@@ -18,7 +18,7 @@ class Skill {
     required this.id,
     required this.name,
     required this.totalTime,
-    required this.icon,
+    required this.iconCodePoint,
     required this.progress,
     this.groupId,
     this.inHallOfGlory = false,
@@ -31,7 +31,7 @@ class Skill {
     String? id,
     String? name,
     int? totalTime,
-    IconData? icon,
+    int? iconCodePoint,
     double? progress,
     String? groupId,
     bool? inHallOfGlory,
@@ -42,7 +42,7 @@ class Skill {
       id: id ?? this.id,
       name: name ?? this.name,
       totalTime: totalTime ?? this.totalTime,
-      icon: icon ?? this.icon,
+      iconCodePoint: iconCodePoint ?? this.iconCodePoint,
       progress: progress ?? this.progress,
       groupId: groupId ?? this.groupId,
       inHallOfGlory: inHallOfGlory ?? this.inHallOfGlory,
@@ -81,7 +81,7 @@ class Skill {
     'id': id,
     'name': name,
     'totalTime': totalTime,
-    'icon': icon.codePoint,
+    'iconCodePoint': iconCodePoint,
     'progress': progress,
     'groupId': groupId,
     'inHallOfGlory': inHallOfGlory,
@@ -96,7 +96,7 @@ class Skill {
         : map['id'],
     name: map['name'],
     totalTime: map['totalTime'],
-    icon: IconData(map['icon'], fontFamily: 'MaterialIcons'),
+    iconCodePoint: map['iconCodePoint'],
     progress: map['progress'],
     groupId: map['groupId'],
     inHallOfGlory: map['inHallOfGlory'] ?? false,

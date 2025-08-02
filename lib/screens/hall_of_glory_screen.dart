@@ -5,6 +5,7 @@ import '../models/skill_model.dart';
 import '../widgets/skill_card.dart';
 import 'dart:math';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../models/icon_map.dart';
 
 enum GlorySortType { timeDesc, nameAsc, custom }
 
@@ -45,18 +46,50 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 当依赖项改变时（比如从其他页面返回），重新加载数据
+    _loadSkills();
+  }
+
   Future<void> _loadSkills() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String>? skillsAsString = prefs.getStringList('skills_list_key');
-    if (skillsAsString != null && skillsAsString.isNotEmpty) {
-      final List<Skill> loadedSkills = skillsAsString
-          .map((e) => Skill.fromMap(Map<String, dynamic>.from(jsonDecode(e))))
-          .toList();
-      setState(() {
-        skills = loadedSkills.where((s) => s.inHallOfGlory == true).toList();
-      });
-      // 不再自动调用_loadCustomOrder，避免死循环
-    } else {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String>? skillsAsString = prefs.getStringList(
+        'skills_list_key',
+      );
+
+      if (skillsAsString != null && skillsAsString.isNotEmpty) {
+        try {
+          final List<Skill> loadedSkills = skillsAsString
+              .map(
+                (e) => Skill.fromMap(Map<String, dynamic>.from(jsonDecode(e))),
+              )
+              .toList();
+
+          setState(() {
+            // 只显示已进入荣耀殿堂的技能
+            skills = loadedSkills
+                .where((s) => s.inHallOfGlory == true)
+                .toList();
+          });
+
+          print('荣耀殿堂加载了 ${skills.length} 个技能');
+        } catch (parseError) {
+          print('解析荣耀殿堂技能数据失败: $parseError');
+          setState(() {
+            skills = [];
+          });
+        }
+      } else {
+        setState(() {
+          skills = [];
+        });
+        print('没有找到技能数据');
+      }
+    } catch (e) {
+      print('加载荣耀殿堂技能时发生错误: $e');
       setState(() {
         skills = [];
       });
@@ -72,6 +105,13 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
     } else if (_sortType == GlorySortType.nameAsc) {
       sortedSkills.sort((a, b) => a.name.compareTo(b.name));
     }
+
+    // 调试信息
+    print('荣耀殿堂：技能数 ${skills.length}');
+    for (final skill in skills) {
+      print('荣耀殿堂技能: ${skill.name}, inHallOfGlory: ${skill.inHallOfGlory}');
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
@@ -244,41 +284,150 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                         children: [
                                           SlidableAction(
                                             onPressed: (context) async {
-                                              // 移出殿堂
-                                              final prefs =
-                                                  await SharedPreferences.getInstance();
-                                              setState(() {
-                                                skills[realIndex] = skill
+                                              try {
+                                                // 移出殿堂
+                                                final prefs =
+                                                    await SharedPreferences.getInstance();
+
+                                                // 加载完整的技能列表
+                                                final List<String>?
+                                                allSkillsAsString = prefs
+                                                    .getStringList(
+                                                      'skills_list_key',
+                                                    );
+                                                if (allSkillsAsString == null ||
+                                                    allSkillsAsString.isEmpty) {
+                                                  throw Exception('无法加载技能数据');
+                                                }
+
+                                                // 解析完整的技能列表
+                                                final List<Skill> allSkills =
+                                                    allSkillsAsString
+                                                        .map(
+                                                          (e) => Skill.fromMap(
+                                                            Map<
+                                                              String,
+                                                              dynamic
+                                                            >.from(
+                                                              jsonDecode(e),
+                                                            ),
+                                                          ),
+                                                        )
+                                                        .toList();
+
+                                                // 找到对应的技能并更新状态
+                                                final skillIndex = allSkills
+                                                    .indexWhere(
+                                                      (s) => s.id == skill.id,
+                                                    );
+                                                if (skillIndex == -1) {
+                                                  throw Exception('找不到对应的技能');
+                                                }
+
+                                                // 更新技能状态
+                                                allSkills[skillIndex] = skill
                                                     .copyWith(
                                                       inHallOfGlory: false,
                                                     );
-                                              });
-                                              // 更新本地存储
-                                              final List<String>
-                                              skillsAsString = skills
-                                                  .map(
-                                                    (s) =>
-                                                        jsonEncode(s.toMap()),
-                                                  )
-                                                  .toList();
-                                              await prefs.setStringList(
-                                                'skills_list_key',
-                                                skillsAsString,
-                                              );
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('已移出荣耀殿堂'),
-                                                ),
-                                              );
-                                              // 重新加载技能，确保主页面也能刷新
-                                              _loadSkills();
+
+                                                // 准备保存数据
+                                                final List<String>
+                                                skillsAsString = allSkills
+                                                    .map(
+                                                      (s) =>
+                                                          jsonEncode(s.toMap()),
+                                                    )
+                                                    .toList();
+
+                                                // 先保存备份
+                                                await prefs.setStringList(
+                                                  'skills_list_key_backup',
+                                                  skillsAsString,
+                                                );
+                                                await prefs.setInt(
+                                                  'skills_list_key_backup_timestamp',
+                                                  DateTime.now()
+                                                      .millisecondsSinceEpoch,
+                                                );
+
+                                                // 再保存主数据
+                                                await prefs.setStringList(
+                                                  'skills_list_key',
+                                                  skillsAsString,
+                                                );
+                                                await prefs.setInt(
+                                                  'skills_list_key_timestamp',
+                                                  DateTime.now()
+                                                      .millisecondsSinceEpoch,
+                                                );
+
+                                                // 更新当前页面的技能列表
+                                                setState(() {
+                                                  skills = allSkills
+                                                      .where(
+                                                        (s) =>
+                                                            s.inHallOfGlory ==
+                                                            true,
+                                                      )
+                                                      .toList();
+                                                });
+
+                                                // 检查widget是否仍然挂载
+                                                if (mounted &&
+                                                    context.mounted) {
+                                                  // 显示成功消息
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('已移出荣耀殿堂'),
+                                                      backgroundColor:
+                                                          Colors.green,
+                                                      duration: Duration(
+                                                        seconds: 2,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+
+                                                // 显示成功消息，用户手动返回
+                                                if (mounted &&
+                                                    context.mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        '已移出荣耀殿堂，返回主界面查看',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
+                                                      duration: Duration(
+                                                        seconds: 3,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                print('移出殿堂时发生错误: $e');
+                                                if (mounted &&
+                                                    context.mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('移出失败: $e'),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    ),
+                                                  );
+                                                }
+                                              }
                                             },
                                             backgroundColor: Colors.grey,
                                             foregroundColor: Colors.white,
                                             icon: Icons.undo,
-                                            label: '移出殿堂',
+                                            label: '移出',
                                             borderRadius: BorderRadius.circular(
                                               16,
                                             ),
@@ -397,7 +546,11 @@ class StaticSkillCard extends StatelessWidget {
             Container(
               decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
               padding: const EdgeInsets.all(10),
-              child: Icon(skill.icon, color: theme.iconTheme.color, size: 24),
+              child: Icon(
+                skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
+                color: theme.iconTheme.color,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(

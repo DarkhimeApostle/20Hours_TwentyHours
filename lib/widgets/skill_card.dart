@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
 import '../main.dart';
 import 'dart:math';
+import 'package:TwentyHours/models/icon_map.dart';
 
 // 条纹绘制器
 class StripePainter extends CustomPainter {
@@ -222,10 +223,11 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                 ),
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-  widget.skill.icon,
-  color: Color(widget.skill.iconColor),
-  size: 24,
-),
+                  skillIconMap[widget.skill.iconCodePoint] ??
+                      Icons.help_outline,
+                  color: Color(widget.skill.iconColor),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               // 技能名称和进度条

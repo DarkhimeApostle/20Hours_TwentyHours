@@ -113,11 +113,20 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   void _finishTiming() async {
     _stopTimer();
 
-    // 直接传递技能列表给弹窗
+    // 检查是否有计时时间
+    final elapsedTime = _stopwatch.elapsed;
+    if (elapsedTime.inSeconds == 0) {
+      // 没有计时，直接退出
+      debugPrint('No timing recorded, exiting timer page');
+      Navigator.of(context).pop();
+      return;
+    }
+
+    // 有计时时间，弹出技能选择对话框
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) =>
-          SkillSelectDialog(skills: _skills, duration: _stopwatch.elapsed),
+          SkillSelectDialog(skills: _skills, duration: elapsedTime),
     );
 
     // 如果用户选择了技能，返回结果；如果取消，直接退出
@@ -126,7 +135,7 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
       debugPrint('User selected skill: ${result['skillIndex']}');
       Navigator.of(context).pop({
         'skillIndex': result['skillIndex'],
-        'duration': _stopwatch.elapsed.inSeconds,
+        'duration': elapsedTime.inSeconds,
       });
     } else {
       debugPrint('User cancelled, exiting timer page');

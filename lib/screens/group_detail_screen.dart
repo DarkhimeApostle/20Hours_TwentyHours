@@ -179,8 +179,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                 for (final skill in _skills)
                   Card(
                     key: ValueKey(skill.name + (skill.groupId ?? '')),
+
+                    // 由于Skill没有icon属性，这里可以用一个默认图标或者根据Skill的其他属性自定义图标
                     child: ListTile(
-                      leading: Icon(skill.icon),
+                      leading: const Icon(Icons.star), // 使用默认图标
                       title: Text(skill.name),
                       subtitle: Text(
                         '累计时长：${skill.totalTime ~/ 3600}小时${(skill.totalTime % 3600) ~/ 60}分',
