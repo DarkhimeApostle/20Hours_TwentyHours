@@ -161,10 +161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Text(
-                        'linziyan@example.com',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
                     ],
                   ),
                 ),
@@ -182,103 +178,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              // 主题色设置
-              ListTile(
-                leading: Icon(
-                  Icons.palette,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('主题色'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现主题色选择
-                },
-              ),
-
-              // 深色模式设置
-              ListTile(
-                leading: Icon(
-                  Icons.nightlight_round,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('深色模式'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现深色模式切换
-                },
-              ),
-
-              // 屏幕方向设置
-              ListTile(
-                leading: Icon(
-                  Icons.screen_rotation,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('屏幕方向'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现屏幕方向设置
-                },
-              ),
-
-              // 应用锁设置
-              ListTile(
-                leading: Icon(
-                  Icons.lock,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('应用锁'),
-                trailing: Switch(
-                  value: false, // TODO: 从设置中读取
-                  onChanged: (value) {
-                    // TODO: 实现应用锁开关
-                  },
-                ),
-              ),
-
-              const Divider(),
-
-              // 同步备份
-              ListTile(
-                leading: Icon(
-                  Icons.sync,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('同步备份'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现同步备份
-                },
-              ),
-
-              // 好评鼓励
-              ListTile(
-                leading: Icon(
-                  Icons.thumb_up,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('好评鼓励'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现好评鼓励
-                },
-              ),
-
-              // 关于我们
-              ListTile(
-                leading: Icon(
-                  Icons.info,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: const Text('关于我们'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: 实现关于我们页面
-                },
-              ),
-
-              const Divider(),
-
               // 数据恢复
               ListTile(
                 leading: const Icon(Icons.restore, color: Colors.orange),

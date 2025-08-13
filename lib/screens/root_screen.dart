@@ -54,30 +54,15 @@ class MainAppBarTitle extends StatelessWidget {
                 ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              userName,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kTextMainDark
-                    : kTextMain,
-              ),
-            ),
-            Text(
-              'linziyan@example.com',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kTextSubDark
-                    : kTextSub,
-              ),
-            ),
-          ],
+        Text(
+          userName,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? kTextMainDark
+                : kTextMain,
+          ),
         ),
       ],
     );
@@ -105,115 +90,183 @@ class MainDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       backgroundColor: Theme.of(context).cardColor,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(
-              userName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image:
+                drawerBgPath != null &&
+                    drawerBgPath!.isNotEmpty &&
+                    File(drawerBgPath!).existsSync()
+                ? FileImage(File(drawerBgPath!))
+                : const AssetImage('assets/images/drawer_bg.jpg')
+                      as ImageProvider,
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.2),
+              BlendMode.darken,
             ),
-            accountEmail: const Text(
-              "linziyan@example.com",
-              style: TextStyle(color: Colors.white70),
-            ),
-            currentAccountPicture: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
+          ),
+        ),
+        child: Column(
+          children: [
+            // 用户信息头部 - 减小高度
+            Container(
+              height: 120,
+              padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+              child: Row(
+                children: [
+                  // 头像
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child:
+                        (avatarPath != null &&
+                            avatarPath!.isNotEmpty &&
+                            File(avatarPath!).existsSync())
+                        ? CircleAvatar(
+                            backgroundImage: FileImage(File(avatarPath!)),
+                            radius: 30,
+                          )
+                        : CircleAvatar(
+                            backgroundColor: Colors.transparent,
+                            child: Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // 用户信息
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child:
-                  (avatarPath != null &&
-                      avatarPath!.isNotEmpty &&
-                      File(avatarPath!).existsSync())
-                  ? CircleAvatar(
-                      backgroundImage: FileImage(File(avatarPath!)),
-                      radius: 40,
-                    )
-                  : CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      child: Icon(Icons.person, color: Colors.white, size: 40),
-                    ),
             ),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              image: DecorationImage(
-                image:
-                    drawerBgPath != null &&
-                        drawerBgPath!.isNotEmpty &&
-                        File(drawerBgPath!).existsSync()
-                    ? FileImage(File(drawerBgPath!))
-                    : const AssetImage('assets/images/drawer_bg.jpg')
-                          as ImageProvider,
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.35),
-                  BlendMode.darken,
-                ),
+
+            // 中间空白区域 - 让背景图片充分展示
+            Expanded(child: Container()),
+
+            // 底部功能按钮区域 - 大幅下移
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Column(
+                children: [
+                  // 荣耀殿堂按钮
+                  _buildActionButton(
+                    context,
+                    icon: Icons.star,
+                    iconColor: Colors.amber,
+                    label: '荣耀殿堂',
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const HallOfGloryScreen(),
+                        ),
+                      );
+                      onRefreshHome?.call();
+                    },
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 统计按钮
+                  _buildActionButton(
+                    context,
+                    icon: Icons.bar_chart,
+                    iconColor: Theme.of(context).brightness == Brightness.dark
+                        ? kTextMainDark
+                        : kPrimaryColor,
+                    label: '统计',
+                    onTap: onStatsTap,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 设置按钮
+                  _buildActionButton(
+                    context,
+                    icon: Icons.settings,
+                    iconColor: Theme.of(context).brightness == Brightness.dark
+                        ? kTextMainDark
+                        : kPrimaryColor,
+                    label: '设置',
+                    onTap: onSettingsTap,
+                  ),
+                ],
               ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.star, color: Colors.amber),
-            title: const Text('荣耀殿堂'),
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const HallOfGloryScreen(),
-                ),
-              );
-              // 从荣耀殿堂返回后，刷新主界面数据
-              onRefreshHome?.call();
-            },
-          ),
-          ListTile(
-            leading: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kIconBgDark
-                    : kIconBgLight,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.bar_chart,
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 构建操作按钮
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? kTextMainDark
-                    : kPrimaryColor,
+                    : kTextMain,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
               ),
             ),
-            title: const Text('统计'),
-            onTap: onStatsTap,
-          ),
-          ListTile(
-            leading: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kIconBgDark
-                    : kIconBgLight,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.settings,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? kTextMainDark
-                    : kPrimaryColor,
-              ),
-            ),
-            title: const Text('设置'),
-            onTap: onSettingsTap,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
