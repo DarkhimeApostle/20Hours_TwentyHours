@@ -1,5 +1,8 @@
 import 'package:TwentyHours/screens/root_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bugly/flutter_bugly.dart';
+import 'package:TwentyHours/secrets.dart';
 
 // 更深的现代清新风格主色
 const Color kPrimaryColor = Color(0xFF2563EB); // 深蓝
@@ -18,7 +21,17 @@ const Color kTextMainDark = Color(0xFFF6F8FC); // 深色主文本
 const Color kTextSubDark = Color(0xFFA0AEC0); // 深色辅助文本
 
 // 应用程序入口
-void main() {
+void main() async {
+  // 确保Flutter绑定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化Bugly
+  await FlutterBugly.init(
+    androidAppId: 'ae931cda6f',
+    appKey: buglyAppKey,
+    debugMode: true, // 设置为true
+  );
+
   runApp(const TwentyHours());
 }
 
