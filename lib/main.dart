@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:TwentyHours/secrets.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // 更深的现代清新风格主色
 const Color kPrimaryColor = Color(0xFF2563EB); // 深蓝
@@ -31,6 +32,18 @@ void main() async {
     appKey: buglyAppKey,
     debugMode: true, // 设置为true
   );
+
+  // 请求存储权限
+  try {
+    final status = await Permission.storage.status;
+    if (status.isDenied) {
+      // 只在权限被拒绝时请求，避免频繁弹窗
+      await Permission.storage.request();
+    }
+  } catch (e) {
+    print('应用启动时请求存储权限失败: $e');
+    // 权限插件可能未正确初始化，但不影响应用启动
+  }
 
   runApp(const TwentyHours());
 }
