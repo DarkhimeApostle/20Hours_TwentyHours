@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:TwentyHours/models/skill_model.dart';
+import 'package:TwentyHours/models/icon_map.dart';
 import '../main.dart';
 import 'dart:convert';
 
@@ -386,7 +387,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    IconData(skill.iconCodePoint, fontFamily: 'MaterialIcons'),
+                    skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
                     color: Color(skill.iconColor),
                     size: 20,
                   ),
