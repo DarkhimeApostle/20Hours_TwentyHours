@@ -221,12 +221,12 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                       : kIconBgLight,
                   shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 child: Icon(
                   skillIconMap[widget.skill.iconCodePoint] ??
                       Icons.help_outline,
                   color: Color(widget.skill.iconColor),
-                  size: 24,
+                  size: 28,
                 ),
               ),
               const SizedBox(width: 16),

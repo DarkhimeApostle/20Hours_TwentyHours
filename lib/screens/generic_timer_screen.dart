@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 // import 'package:audioplayers/audioplayers.dart'; // 移除音效播放器相关依赖
 import 'package:TwentyHours/models/skill_model.dart';
+import 'package:TwentyHours/models/icon_map.dart';
 import 'package:TwentyHours/main.dart';
 
 // 通用计时页面，提供计时功能
@@ -205,30 +206,73 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
 
   // 构建计时控制按钮
   Widget _buildTimerControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
       children: [
-        ElevatedButton(
-          onPressed: _toggleTimer,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _isTimerRunning
-                ? Colors.orangeAccent
-                : Theme.of(context).colorScheme.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-          ),
-          child: Text(
-            _isTimerRunning ? '暂停' : '开始',
-            style: const TextStyle(fontSize: 18),
+        // 开始/暂停按钮 - 居中
+        Center(
+          child: ElevatedButton(
+            onPressed: _toggleTimer,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isTimerRunning
+                  ? Colors.orangeAccent
+                  : Theme.of(context).colorScheme.primary,
+              padding: const EdgeInsets.all(24),
+              shape: const CircleBorder(),
+              minimumSize: const Size(100, 100),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isTimerRunning ? Icons.pause : Icons.play_arrow,
+                  size: 70,
+                  color: const Color.fromARGB(255, 255, 255, 255),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _isTimerRunning ? '暂停' : '开始',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color.fromARGB(139, 255, 255, 255),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 20),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+        // 结束按钮 - 接近开始按钮
+        Positioned(
+          right: 40,
+          bottom: 5,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              padding: const EdgeInsets.all(20),
+              shape: const CircleBorder(),
+              minimumSize: const Size(60, 60),
+            ),
+            onPressed: _finishTiming,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.stop,
+                  size: 24,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  '结束',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color.fromARGB(131, 255, 255, 255),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-          onPressed: _finishTiming,
-          child: const Text('结束', style: TextStyle(fontSize: 18)),
         ),
       ],
     );
@@ -245,18 +289,20 @@ class SkillSelectDialog extends StatefulWidget {
 }
 
 class _SkillSelectDialogState extends State<SkillSelectDialog> {
-  int? _selectedIndex;
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 24,
+      ), // 减少边距
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8, // 缩小宽度
+        width: MediaQuery.of(context).size.width * 0.99, // 进一步增加宽度
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.6, // 缩小高度
+          maxHeight: MediaQuery.of(context).size.height * 0.8, // 增加高度
         ),
-        padding: const EdgeInsets.all(16), // 缩小内边距
+        padding: const EdgeInsets.all(20), // 增加内边距
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,14 +313,14 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                 Icon(
                   Icons.timer,
                   color: Theme.of(context).colorScheme.primary,
-                  size: 24, // 缩小图标
+                  size: 28, // 增加图标大小
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '选择归属技能',
+                    '选择计时对象',
                     style: TextStyle(
-                      fontSize: 20, // 缩小标题字号
+                      fontSize: 22, // 增加标题字号
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? kTextMainDark
@@ -284,59 +330,44 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               '本次计时：${_formatDuration(widget.duration)}',
               style: TextStyle(
-                fontSize: 13, // 缩小副标题字号
+                fontSize: 15, // 增加副标题字号
                 color: Theme.of(context).brightness == Brightness.dark
                     ? kTextSubDark
                     : kTextSub,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // 技能列表
             if (widget.skills.isEmpty)
               _buildEmptyState()
+            else if (widget.skills.every(
+              (skill) =>
+                  skill.progressBasedOn20Hours >= 1.0 || skill.inHallOfGlory,
+            ))
+              _buildAllCompletedState()
             else
               Expanded(child: _buildSkillsList()),
 
             const SizedBox(height: 16),
 
-            // 按钮区域
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text('取消', style: TextStyle(fontSize: 14)),
+            // 只保留取消按钮
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _selectedIndex == null
-                        ? null
-                        : () => Navigator.of(
-                            context,
-                          ).pop({'skillIndex': _selectedIndex}),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text('确认归属', style: TextStyle(fontSize: 14)),
-                  ),
-                ),
-              ],
+                child: const Text('取消', style: TextStyle(fontSize: 16)),
+              ),
             ),
           ],
         ),
@@ -366,100 +397,122 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
     );
   }
 
+  // 构建全部完成状态
+  Widget _buildAllCompletedState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.star, size: 64, color: Colors.amber.shade400),
+          const SizedBox(height: 16),
+          Text(
+            '所有技能已完成！',
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '您的技能都已进入荣耀殿堂',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 构建技能列表
   Widget _buildSkillsList() {
+    // 过滤掉已经达到100%的技能（进入荣耀殿堂的技能）
+    final availableSkills = widget.skills
+        .where(
+          (skill) => skill.progressBasedOn20Hours < 1.0 && !skill.inHallOfGlory,
+        )
+        .toList();
+
     return ListView.separated(
       shrinkWrap: true,
-      itemCount: widget.skills.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8), // 缩小间距
+      itemCount: availableSkills.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 6), // 更紧凑的间距
       itemBuilder: (context, index) {
-        final skill = widget.skills[index];
-        final isSelected = _selectedIndex == index;
+        final skill = availableSkills[index];
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12), // 缩小圆角
-            border: Border.all(
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade300,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => setState(() => _selectedIndex = index),
-              child: Padding(
-                padding: const EdgeInsets.all(12), // 缩小内边距
-                child: Row(
-                  children: [
-                    // 选择指示器
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade300,
-                      ),
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 12,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-
-                    // 技能信息
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            skill.name,
-                            style: TextStyle(
-                              fontSize: 15, // 缩小主字号
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : (Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? kTextMainDark
-                                        : kTextMain),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '总计时：${skill.formattedTime}',
-                            style: TextStyle(
-                              fontSize: 12, // 缩小副字号
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? kTextSubDark
-                                  : kTextSub,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // 箭头图标
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 12, // 缩小箭头
-                      color: Colors.grey.shade400,
-                    ),
-                  ],
+        return GestureDetector(
+          onTap: () {
+            // 点击技能后立即归属
+            // 找到原始技能列表中的索引
+            final originalIndex = widget.skills.indexOf(skill);
+            Navigator.of(context).pop({'skillIndex': originalIndex});
+          },
+          child: Container(
+            width: double.infinity,
+            height: 52, // 固定高度，更紧凑
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
                 ),
-              ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                // 技能图标
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Color(skill.iconColor).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
+                    color: Color(skill.iconColor),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // 技能信息
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        skill.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kTextMainDark
+                              : kTextMain,
+                        ),
+                        maxLines: 1, // 单行显示
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        skill.formattedTime,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kTextSubDark
+                              : kTextSub,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 箭头图标
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(width: 16),
+              ],
             ),
           ),
         );

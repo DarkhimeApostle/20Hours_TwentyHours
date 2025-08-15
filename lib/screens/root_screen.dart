@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/screens/home_screen.dart';
 import 'package:TwentyHours/screens/generic_timer_screen.dart';
-import 'package:TwentyHours/screens/promotion_screen.dart';
+import 'package:TwentyHours/screens/instruction_screen.dart';
 import '../main.dart';
+import 'package:TwentyHours/screens/about_screen.dart';
 import 'package:TwentyHours/screens/settings_screen.dart';
+import 'package:TwentyHours/screens/statistics_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:TwentyHours/models/skill_model.dart';
@@ -24,14 +26,12 @@ class MainAppBarTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        // 用户自定义头像展示框
         Container(
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? kPrimaryColor.withOpacity(0.85)
-                : kPrimaryColor,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -40,18 +40,44 @@ class MainAppBarTitle extends StatelessWidget {
               ),
             ],
           ),
-          child:
-              (avatarPath != null &&
-                  avatarPath!.isNotEmpty &&
-                  File(avatarPath!).existsSync())
-              ? CircleAvatar(
-                  backgroundImage: FileImage(File(avatarPath!)),
-                  radius: 20,
-                )
-              : CircleAvatar(
-                  backgroundColor: Colors.transparent,
-                  child: Icon(Icons.person, color: Colors.white, size: 20),
-                ),
+          child: ClipOval(
+            child:
+                (avatarPath != null &&
+                    avatarPath!.isNotEmpty &&
+                    File(avatarPath!).existsSync())
+                ? Image.file(
+                    File(avatarPath!),
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kPrimaryColor.withOpacity(0.85)
+                              : kPrimaryColor,
+                        ),
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? kPrimaryColor.withOpacity(0.85)
+                          : kPrimaryColor,
+                    ),
+                    child: Icon(Icons.person, color: Colors.white, size: 16),
+                  ),
+          ),
         ),
         const SizedBox(width: 12),
         Text(
@@ -74,7 +100,6 @@ class MainDrawer extends StatelessWidget {
   final String userName;
   final String? avatarPath;
   final String? drawerBgPath;
-  final VoidCallback onStatsTap;
   final VoidCallback onSettingsTap;
   final VoidCallback? onRefreshHome; // 添加刷新回调
   const MainDrawer({
@@ -82,7 +107,6 @@ class MainDrawer extends StatelessWidget {
     required this.userName,
     required this.avatarPath,
     required this.drawerBgPath,
-    required this.onStatsTap,
     required this.onSettingsTap,
     this.onRefreshHome, // 添加刷新回调参数
   }) : super(key: key);
@@ -102,72 +126,13 @@ class MainDrawer extends StatelessWidget {
                       as ImageProvider,
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.2),
+              Colors.black.withOpacity(0.1),
               BlendMode.darken,
             ),
           ),
         ),
         child: Column(
           children: [
-            // 用户信息头部 - 减小高度
-            Container(
-              height: 120,
-              padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
-              child: Row(
-                children: [
-                  // 头像
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child:
-                        (avatarPath != null &&
-                            avatarPath!.isNotEmpty &&
-                            File(avatarPath!).existsSync())
-                        ? CircleAvatar(
-                            backgroundImage: FileImage(File(avatarPath!)),
-                            radius: 30,
-                          )
-                        : CircleAvatar(
-                            backgroundColor: Colors.transparent,
-                            child: Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // 用户信息
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          userName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // 中间空白区域 - 让背景图片充分展示
             Expanded(child: Container()),
 
@@ -197,12 +162,20 @@ class MainDrawer extends StatelessWidget {
                   // 统计按钮
                   _buildActionButton(
                     context,
-                    icon: Icons.bar_chart,
+                    icon: Icons.analytics,
                     iconColor: Theme.of(context).brightness == Brightness.dark
                         ? kTextMainDark
                         : kPrimaryColor,
-                    label: '统计',
-                    onTap: onStatsTap,
+                    label: '技能统计',
+                    onTap: () {
+                      Navigator.pop(context); // 关闭抽屉
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const StatisticsScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 8),
@@ -272,16 +245,6 @@ class MainDrawer extends StatelessWidget {
   }
 }
 
-// 统计页面，暂未实现具体功能
-class StatsScreen extends StatelessWidget {
-  const StatsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('统计页面（待开发）'));
-  }
-}
-
 // 应用主页面，包含底部导航栏和页面切换逻辑
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
@@ -311,7 +274,9 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
-    // 移除自动刷新逻辑，用户需要手动重启应用
+    // 设置页面返回后刷新头像、背景和用户名
+    await _refreshUserImages();
+    await _loadUserName();
   }
 
   // 动画控制器
@@ -336,12 +301,8 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     // 初始化页面列表 - 只创建一次，避免重新创建
     _pages = [
       HomeScreen(key: _homeScreenKey),
-      const PromotionScreen(),
-      GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _onSettingsTapped,
-        child: const SettingsScreen(),
-      ),
+      const InstructionScreen(),
+      const AboutScreen(),
     ];
 
     // 初始化动画控制器
@@ -386,6 +347,11 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       _avatarPath = prefs.getString('user_avatar_path');
       _drawerBgPath = prefs.getString('drawer_bg_path');
     });
+  }
+
+  // 刷新用户头像和背景
+  Future<void> _refreshUserImages() async {
+    await _loadUserImages();
   }
 
   // 加载用户名
@@ -483,9 +449,9 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
         title: _selectedIndex == 0
             ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
             : (_selectedIndex == 1
-                  ? const Text('统计')
+                  ? const Text('使用说明')
                   : _selectedIndex == 2
-                  ? const Text('设置')
+                  ? const Text('关于')
                   : null),
         actions: _selectedIndex == 0
             ? [
@@ -593,13 +559,8 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
               userName: _userName,
               avatarPath: _avatarPath,
               drawerBgPath: _drawerBgPath,
-              onStatsTap: () {
-                _onItemTapped(1);
-                Navigator.pop(context);
-              },
               onSettingsTap: () async {
                 await _onSettingsTapped();
-                _onItemTapped(2);
                 Navigator.pop(context);
               },
               onRefreshHome: () {
@@ -648,6 +609,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
               ),
               label: '计时',
             ),
+
             BottomNavigationBarItem(
               icon: Container(
                 decoration: BoxDecoration(
@@ -658,13 +620,13 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                 ),
                 padding: const EdgeInsets.all(6),
                 child: Icon(
-                  Icons.bar_chart,
+                  Icons.book,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? kTextMainDark
                       : kPrimaryColor,
                 ),
               ),
-              label: '统计',
+              label: '说明',
             ),
             BottomNavigationBarItem(
               icon: Container(
@@ -675,14 +637,17 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.settings,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? kTextMainDark
-                      : kPrimaryColor,
+                child: Transform.rotate(
+                  angle: 45 * 3.14159 / 180, // 45度转换为弧度
+                  child: Icon(
+                    Icons.flight,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? kTextMainDark
+                        : kPrimaryColor,
+                  ),
                 ),
               ),
-              label: '设置',
+              label: '关于',
             ),
           ],
           currentIndex: _selectedIndex,

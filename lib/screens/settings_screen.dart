@@ -65,8 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('保存用户名成功，请重启应用'),
-          duration: Duration(seconds: 3),
+          content: Text('保存用户名成功'),
+          duration: Duration(seconds: 2),
         ),
       );
     }
@@ -100,8 +100,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('保存头像成功，请重启应用'),
-              duration: Duration(seconds: 3),
+              content: Text('保存头像成功'),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -111,8 +111,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('保存侧边栏背景成功，请重启应用'),
-              duration: Duration(seconds: 3),
+              content: Text('保存侧边栏背景成功'),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -130,54 +130,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Icon(Icons.settings, size: 24),
+            const SizedBox(width: 8),
+            const Text('设置'),
+          ],
+        ),
+      ),
       body: ListView(
         children: [
-          // 用户信息区域
-          Container(
-            color: Theme.of(context).colorScheme.primary,
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                // 头像
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: _avatarPath != null
-                      ? FileImage(File(_avatarPath!))
-                      : const AssetImage('assets/images/avatar.png')
-                            as ImageProvider,
-                ),
-                const SizedBox(width: 16),
-                // 用户信息
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _userName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 编辑按钮
-                IconButton(
-                  onPressed: _showEditProfileDialog,
-                  icon: const Icon(Icons.edit, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-
           // 设置选项列表
           ListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
+              // 编辑用户名
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.grey),
+                title: const Text('编辑用户名'),
+                subtitle: Text('当前用户名：$_userName'),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+                onTap: _showEditProfileDialog,
+              ),
+              const Divider(height: 1),
+              // 更换头像
+              ListTile(
+                leading: const Icon(Icons.person_outline, color: Colors.grey),
+                title: const Text('更换头像'),
+                subtitle: const Text('自定义您的个人头像'),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+                onTap: () => _pickAndSaveImage(isAvatar: true),
+              ),
+              const Divider(height: 1),
+              // 更换背景
+              ListTile(
+                leading: const Icon(
+                  Icons.wallpaper_outlined,
+                  color: Colors.grey,
+                ),
+                title: const Text('更换背景'),
+                subtitle: const Text('自定义侧边栏背景图片'),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+                onTap: () => _pickAndSaveImage(isAvatar: false),
+              ),
+              const Divider(height: 1),
               // 数据恢复
               ListTile(
                 leading: const Icon(Icons.restore, color: Colors.orange),
@@ -209,24 +219,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: '用户名',
                 border: OutlineInputBorder(),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _pickAndSaveImage(isAvatar: true),
-                    child: const Text('更换头像'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _pickAndSaveImage(isAvatar: false),
-                    child: const Text('更换背景'),
-                  ),
-                ),
-              ],
             ),
           ],
         ),

@@ -133,7 +133,7 @@ class _SkillDetailsScreenState extends State<SkillDetailsScreen> {
         children: [
           Expanded(
             child: _diaryList.isEmpty
-                ? Center(child: Text('暂无心情日记，快来记录吧！'))
+                ? Center(child: Text('暂无短日记'))
                 : ListView.separated(
                     reverse: false,
                     itemCount: _diaryList.length,
@@ -171,9 +171,9 @@ class _SkillDetailsScreenState extends State<SkillDetailsScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    minLines: 2, // 高度提升一倍
+                    minLines: 1, // 高度提升一倍
                     maxLines: 6,
-                    decoration: InputDecoration(hintText: '写下你的心情或成长短记...'),
+                    decoration: InputDecoration(hintText: ''),
                   ),
                 ),
                 const SizedBox(width: 8),

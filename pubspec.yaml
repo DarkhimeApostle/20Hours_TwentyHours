@@ -48,6 +48,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: ^0.13.1 
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -101,3 +103,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+flutter_launcher_icons:
+  android: true       # 为Android平台生成图标
+  ios: true           # 为iOS平台生成图标
+  image_path: "assets/logo/icon.png" # logo位置
+  min_sdk_android: 21 # (可选) 确保兼容安卓的自适应图标

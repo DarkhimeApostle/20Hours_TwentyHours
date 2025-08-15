@@ -39,6 +39,9 @@ class _EditSkillScreenState extends State<EditSkillScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // 控制图标选择器展开/收起
+  bool _isIconSelectorExpanded = false;
+
   // 图标库
   final List<IconData> _availableIcons = [
     Icons.timer,
@@ -154,12 +157,13 @@ class _EditSkillScreenState extends State<EditSkillScreen>
 
   // 6种主色
   final List<Color> _iconColors = [
-    Color(0xFF2563EB), // 蓝
-    Color(0xFFF59E42), // 橙
-    Color(0xFF10B981), // 绿
-    Color(0xFFEF4444), // 红
-    Color(0xFF8B5CF6), // 紫
-    Color(0xFF14B8A6), // 青
+    Color.fromARGB(255, 37, 41, 48), // 深灰
+    Color.fromARGB(255, 25, 152, 255), // 蓝
+    Color.fromARGB(255, 237, 164, 38), // 橙
+    Color.fromARGB(255, 255, 27, 156), // 绿
+    Color.fromARGB(255, 255, 14, 14), // 红
+
+    Color.fromARGB(255, 15, 41, 121), // 中灰
   ];
   Color _selectedIconColor = Color(0xFF2563EB);
 
@@ -351,48 +355,52 @@ class _EditSkillScreenState extends State<EditSkillScreen>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: CustomScrollView(
-            slivers: [
-              // 技能图标选择区域
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // 技能图标和名称编辑区域（合并）
+                Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: ExpansionTile(
-                    title: Row(
-                      children: [
-                        Icon(
-                          Icons.palette,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '选择图标和颜色',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? kTextMainDark
-                                : kTextMain,
-                          ),
-                        ),
-                      ],
-                    ),
-                    initiallyExpanded: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 标题行
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '图标和名称',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kTextMainDark
+                                  : kTextMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
                       // 颜色选择器
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
@@ -403,41 +411,45 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                                 setState(() => _selectedIconColor = color),
                             child: Container(
                               margin: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 8,
+                                horizontal: 4,
+                                vertical: 4,
                               ),
-                              width: 32,
-                              height: 32,
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: color,
                                 shape: BoxShape.circle,
                                 border: isSelected
-                                    ? Border.all(width: 3, color: Colors.black)
+                                    ? Border.all(width: 2, color: Colors.black)
                                     : null,
                               ),
                               child: isSelected
                                   ? const Icon(
                                       Icons.check,
                                       color: Colors.white,
-                                      size: 18,
+                                      size: 16,
                                     )
                                   : null,
                             ),
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+
                       // 图标选择网格
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 8,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              crossAxisCount: 6,
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 4,
+                              childAspectRatio: 1,
                             ),
-                        itemCount: _availableIcons.length,
+                        itemCount: _isIconSelectorExpanded
+                            ? _availableIcons.length
+                            : 12, // 展开时显示所有图标，否则只显示前2行（6x2=12个图标）
                         itemBuilder: (context, index) {
                           final icon = _availableIcons[index];
                           final isSelected =
@@ -473,85 +485,71 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                           );
                         },
                       ),
-                    ],
-                  ),
-                ),
-              ),
 
-              // 技能名称编辑区域
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.edit,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '技能名称',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? kTextMainDark
-                                  : kTextMain,
+                      // 展开更多按钮
+                      if (_availableIcons.length > 12)
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isIconSelectorExpanded =
+                                    !_isIconSelectorExpanded;
+                              });
+                            },
+                            icon: Icon(
+                              _isIconSelectorExpanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: 16,
+                            ),
+                            label: Text(
+                              _isIconSelectorExpanded ? '收起图标' : '更多图标',
+                              style: const TextStyle(fontSize: 14),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                        ),
+
+                      const SizedBox(height: 12),
+
+                      // 技能名称输入
                       TextField(
                         controller: _nameController,
                         decoration: InputDecoration(
+                          labelText: '技能名称',
+                          labelStyle: TextStyle(
+                            fontSize: 12,
+                            color: kTextSub,
+                            fontWeight: FontWeight.w400,
+                          ),
                           hintText: '输入技能名称',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 12,
                             vertical: 16,
                           ),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         style: const TextStyle(fontSize: 16),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              // 时间编辑区域
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
+                const SizedBox(height: 12),
+
+                // 时间编辑区域
+                Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -563,13 +561,13 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                           Icon(
                             Icons.access_time,
                             color: Theme.of(context).colorScheme.primary,
-                            size: 24,
+                            size: 20,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Text(
                             '累计时间',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
                                   Theme.of(context).brightness ==
@@ -580,11 +578,14 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
 
                       // 时间显示区域
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? kIconBgDark
@@ -597,13 +598,13 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                             Icon(
                               Icons.timer,
                               color: Theme.of(context).colorScheme.primary,
-                              size: 20,
+                              size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               _getFormattedTime(),
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color:
                                     Theme.of(context).brightness ==
@@ -616,7 +617,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
 
                       // 滑块控制
                       Column(
@@ -626,9 +627,9 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '快速调整',
+                                '滑动调整',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color:
                                       Theme.of(context).brightness ==
@@ -640,7 +641,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                               Text(
                                 '0-20小时',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   color:
                                       Theme.of(context).brightness ==
                                           Brightness.dark
@@ -650,7 +651,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: Theme.of(
@@ -665,16 +666,16 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                               overlayColor: Theme.of(
                                 context,
                               ).colorScheme.primary.withOpacity(0.2),
-                              trackHeight: 6,
+                              trackHeight: 4,
                               thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 8,
+                                enabledThumbRadius: 6,
                               ),
                             ),
                             child: Slider(
                               value: _getSliderValue(),
                               min: 0,
-                              max: 72000, // 20小时 = 72000秒
-                              divisions: 240, // 每5分钟一个刻度
+                              max: 72000,
+                              divisions: 240,
                               onChanged: (value) {
                                 _updateTimeFromSlider(value);
                               },
@@ -683,20 +684,20 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
 
                       // 精确输入区域
                       Text(
                         '精确调整',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).brightness == Brightness.dark
                               ? kTextMainDark
                               : kTextMain,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -710,13 +711,13 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
+                                  horizontal: 12,
+                                  vertical: 12,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: TextField(
                               controller: _minutesController,
@@ -728,8 +729,8 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
+                                  horizontal: 12,
+                                  vertical: 12,
                                 ),
                               ),
                             ),
@@ -739,96 +740,61 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                     ],
                   ),
                 ),
-              ),
 
-              // 底部按钮区域
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _deleteSkill,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '删除技能',
-                            style: TextStyle(fontSize: 16),
+                const SizedBox(height: 12),
+
+                // 底部按钮区域
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _deleteSkill,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
+                        child: const Text(
+                          '删除技能',
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveChanges,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveChanges,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
                                   ),
-                                )
-                              : const Text(
-                                  '保存更改',
-                                  style: TextStyle(fontSize: 16),
                                 ),
-                        ),
+                              )
+                            : const Text(
+                                '保存更改',
+                                style: TextStyle(fontSize: 14),
+                              ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
 
-              // 恢复底部“完成技能并移入荣耀殿堂”按钮
-              // SliverToBoxAdapter(
-              //   child: Container(
-              //     margin: const EdgeInsets.all(16),
-              //     child: ElevatedButton.icon(
-              //       icon: const Icon(Icons.emoji_events, color: Colors.amber),
-              //       label: const Text('完成技能并移入荣耀殿堂'),
-              //       style: ElevatedButton.styleFrom(
-              //         backgroundColor: Colors.amber,
-              //         foregroundColor: Colors.white,
-              //         minimumSize: const Size.fromHeight(44),
-              //       ),
-              //       onPressed: () async {
-              //         // 保存技能并返回，inHallOfGlory 设为 true
-              //         final updatedSkill = Skill(
-              //           name: _nameController.text,
-              //           totalTime: _getSliderValue().toInt(),
-              //           icon: _selectedIcon,
-              //           progress: widget.skill.progress,
-              //           inHallOfGlory: true,
-              //         );
-              //         Navigator.of(context).pop({
-              //           'action': 'save',
-              //           'skillIndex': widget.skillIndex,
-              //           'skill': updatedSkill,
-              //         });
-              //       },
-              //     ),
-              //   ),
-              // ),
-
-              // 底部间距
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

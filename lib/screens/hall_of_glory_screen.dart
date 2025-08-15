@@ -17,12 +17,13 @@ class HallOfGloryScreen extends StatefulWidget {
 }
 
 class _HallOfGloryScreenState extends State<HallOfGloryScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   List<Skill> skills = [];
   GlorySortType _sortType = GlorySortType.timeDesc;
   List<Skill> reorderList = [];
   late AnimationController _trophyController;
   late Animation<double> _trophyScale;
+  late AnimationController _particlesController;
 
   @override
   void initState() {
@@ -37,12 +38,19 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
       curve: Curves.elasticOut,
     );
     _trophyController.forward();
+
+    // 初始化粒子动画控制器
+    _particlesController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
     // _loadCustomOrder(); // 由_loadSkills里调用
   }
 
   @override
   void dispose() {
     _trophyController.dispose();
+    _particlesController.dispose();
     super.dispose();
   }
 
@@ -142,7 +150,7 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '荣耀殿堂技能',
+                    '荣耀殿堂',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -211,24 +219,31 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
           : null,
       body: Stack(
         children: [
-          // 渐变背景
+          // 简洁渐变背景
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFFFDE68A),
-                  Color(0xFFF59E42),
-                  Color(0xFFB98036),
+                  Color(0xFFFEF3C7), // 浅金色
+                  Color(0xFFF59E0B), // 橙色
+                  Color(0xFFB98036), // 深棕色
                 ],
               ),
             ),
           ),
-          // 粒子特效（简单星星）
+          // 飘动的金色粒子特效
           Positioned.fill(
             child: IgnorePointer(
-              child: CustomPaint(painter: _GloryParticlesPainter()),
+              child: AnimatedBuilder(
+                animation: _particlesController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _GloryParticlesPainter(_particlesController),
+                  );
+                },
+              ),
             ),
           ),
           // 内容
@@ -397,9 +412,7 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                                     context,
                                                   ).showSnackBar(
                                                     const SnackBar(
-                                                      content: Text(
-                                                        '已移出荣耀殿堂，返回主界面查看',
-                                                      ),
+                                                      content: Text('已移出'),
                                                       backgroundColor:
                                                           Colors.green,
                                                       duration: Duration(
@@ -446,26 +459,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                 },
                               ))),
                 ),
-                if (skills.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Text(
-                      '荣耀属于坚持不懈的你！',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.amber.shade800,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 6,
-                            color: Colors.amber.shade100,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -475,52 +468,51 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
   }
 
   Widget _buildEmptyGlory(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.emoji_events_outlined,
-            size: 80,
-            color: Colors.amber.shade200,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '还没有技能进入荣耀殿堂',
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.brown.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '继续努力，解锁属于你的荣耀吧！',
-            style: TextStyle(fontSize: 16, color: Colors.brown.shade400),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 
-// 简单粒子特效Painter（星星）
+// 飘动的金色粒子特效Painter
 class _GloryParticlesPainter extends CustomPainter {
-  final Random _random = Random();
+  final Animation<double> animation;
+
+  _GloryParticlesPainter(this.animation) : super(repaint: animation);
+
   @override
   void paint(Canvas canvas, Size size) {
+    final progress = animation.value;
+
     for (int i = 0; i < 30; i++) {
-      final dx = _random.nextDouble() * size.width;
-      final dy = _random.nextDouble() * size.height;
-      final radius = _random.nextDouble() * 1.8 + 0.7;
-      final paint = Paint()
-        ..color = Colors.amber.withOpacity(_random.nextDouble() * 0.5 + 0.2);
-      canvas.drawCircle(Offset(dx, dy), radius, paint);
+      // 使用固定的种子生成随机数
+      final random = Random(i * 1000);
+
+      // 基础位置 - 限制在下半屏幕
+      final baseX = random.nextDouble() * size.width;
+      final baseY =
+          size.height * 0.5 + random.nextDouble() * (size.height * 0.5);
+
+      // 飘动动画 - 减小幅度
+      final waveX = sin(progress * 2 * pi + i * 0.5) * 8;
+      final waveY = cos(progress * 2 * pi + i * 0.3) * 6;
+
+      // 最终位置
+      final x = baseX + waveX;
+      final y = baseY + waveY;
+
+      // 粒子大小和透明度动画 - 更小更自然
+      final sizeProgress = (sin(progress * 4 * pi + i) + 1) / 2;
+      final radius = 0.8 + sizeProgress * 1.2;
+      final opacity = 0.2 + sizeProgress * 0.3;
+
+      // 绘制粒子 - 移除光晕，更自然
+      final paint = Paint()..color = Colors.amber.withOpacity(opacity);
+
+      canvas.drawCircle(Offset(x, y), radius, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 // 静态卡片（无动画、无TickerProvider）
@@ -545,11 +537,11 @@ class StaticSkillCard extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: Icon(
                 skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
-                color: theme.iconTheme.color,
-                size: 24,
+                color: Color(skill.iconColor),
+                size: 28,
               ),
             ),
             const SizedBox(width: 16),
