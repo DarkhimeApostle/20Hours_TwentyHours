@@ -26,24 +26,15 @@ void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化Bugly
-  await FlutterBugly.init(
+  // 初始化Bugly（异步执行，不阻塞启动）
+  FlutterBugly.init(
     androidAppId: 'ae931cda6f',
     appKey: buglyAppKey,
-    debugMode: true, // 设置为true
+    debugMode: true,
   );
 
-  // 请求存储权限
-  try {
-    final status = await Permission.storage.status;
-    if (status.isDenied) {
-      // 只在权限被拒绝时请求，避免频繁弹窗
-      await Permission.storage.request();
-    }
-  } catch (e) {
-    print('应用启动时请求存储权限失败: $e');
-    // 权限插件可能未正确初始化，但不影响应用启动
-  }
+  // 异步请求存储权限，不阻塞启动
+  Permission.storage.request();
 
   runApp(const TwentyHours());
 }

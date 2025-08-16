@@ -31,6 +31,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadImagePaths();
     _loadUserName();
     _checkStoragePermission();
+
+    // 延迟检查权限，确保UI已完全加载
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _checkStoragePermission();
+      }
+    });
   }
 
   @override
@@ -65,10 +72,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 检查存储权限
   Future<void> _checkStoragePermission() async {
     try {
-      final status = await Permission.storage.status;
+      print('正在检查存储权限...');
+
+      // 检查多种权限状态
+      final storageStatus = await Permission.storage.status;
+      final manageExternalStorageStatus =
+          await Permission.manageExternalStorage.status;
+      final photosStatus = await Permission.photos.status;
+
+      // 对于Android 11+，需要检查管理外部存储权限或照片权限
+      final hasPermission =
+          storageStatus.isGranted ||
+          manageExternalStorageStatus.isGranted ||
+          photosStatus.isGranted;
+
       setState(() {
-        _hasStoragePermission = status.isGranted;
+        _hasStoragePermission = hasPermission;
       });
+
+      print(
+        '存储权限状态: ${storageStatus.isGranted ? "已授予" : "未授予"} (${storageStatus.name})',
+      );
+      print(
+        '管理外部存储权限: ${manageExternalStorageStatus.isGranted ? "已授予" : "未授予"} (${manageExternalStorageStatus.name})',
+      );
+      print(
+        '照片权限状态: ${photosStatus.isGranted ? "已授予" : "未授予"} (${photosStatus.name})',
+      );
+      print('综合权限状态: ${hasPermission ? "已授予" : "未授予"}');
+
+      // 如果权限被拒绝，记录详细信息
+      if (storageStatus.isDenied) {
+        print('存储权限被拒绝，用户需要手动授予');
+      } else if (storageStatus.isPermanentlyDenied) {
+        print('存储权限被永久拒绝，需要用户在设置中手动开启');
+      } else if (storageStatus.isRestricted) {
+        print('存储权限受限，可能是系统限制');
+      }
+
+      if (manageExternalStorageStatus.isDenied) {
+        print('管理外部存储权限被拒绝');
+      } else if (manageExternalStorageStatus.isPermanentlyDenied) {
+        print('管理外部存储权限被永久拒绝');
+      }
+
+      if (photosStatus.isDenied) {
+        print('照片权限被拒绝');
+      } else if (photosStatus.isPermanentlyDenied) {
+        print('照片权限被永久拒绝');
+      }
     } catch (e) {
       print('检查存储权限时发生错误: $e');
       // 如果权限检查失败，假设没有权限
@@ -81,12 +133,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 请求存储权限
   Future<void> _requestStoragePermission() async {
     try {
-      final status = await Permission.storage.request();
+      print('正在请求存储权限...');
+
+      // 先尝试请求存储权限
+      final storageStatus = await Permission.storage.request();
+      print('存储权限请求结果: ${storageStatus.isGranted ? "已授予" : "被拒绝"}');
+
+      // 如果存储权限被拒绝，尝试请求管理外部存储权限（Android 11+）
+      PermissionStatus manageStatus = PermissionStatus.denied;
+      if (!storageStatus.isGranted) {
+        try {
+          manageStatus = await Permission.manageExternalStorage.request();
+          print('管理外部存储权限请求结果: ${manageStatus.isGranted ? "已授予" : "被拒绝"}');
+        } catch (e) {
+          print('请求管理外部存储权限失败: $e');
+        }
+      }
+
+      // 如果还是被拒绝，尝试请求照片权限（Android 13+）
+      PermissionStatus photosStatus = PermissionStatus.denied;
+      if (!storageStatus.isGranted && !manageStatus.isGranted) {
+        try {
+          photosStatus = await Permission.photos.request();
+          print('照片权限请求结果: ${photosStatus.isGranted ? "已授予" : "被拒绝"}');
+        } catch (e) {
+          print('请求照片权限失败: $e');
+        }
+      }
+
+      final hasPermission =
+          storageStatus.isGranted ||
+          manageStatus.isGranted ||
+          photosStatus.isGranted;
       setState(() {
-        _hasStoragePermission = status.isGranted;
+        _hasStoragePermission = hasPermission;
       });
 
-      if (status.isGranted) {
+      print('综合权限结果: ${hasPermission ? "已授予" : "被拒绝"}');
+
+      if (hasPermission) {
         if (mounted && context.mounted && Navigator.of(context).mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -102,11 +187,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted && context.mounted && Navigator.of(context).mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要存储权限才能导出配置到外部存储'),
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('需要存储权限'),
+                  const Text('请在系统设置中手动授予存储权限', style: TextStyle(fontSize: 12)),
+                ],
+              ),
               backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
+              dismissDirection: DismissDirection.horizontal,
             ),
           );
         }
@@ -116,10 +209,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted && context.mounted && Navigator.of(context).mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('权限请求失败: $e'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('权限请求失败'),
+                Text(e.toString(), style: const TextStyle(fontSize: 12)),
+              ],
+            ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
+            dismissDirection: DismissDirection.horizontal,
           ),
         );
       }
@@ -228,34 +329,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 导出配置
   Future<void> _exportConfig() async {
     try {
-      // 尝试使用公共下载目录
-      String backupPath;
-      try {
-        // 尝试访问公共下载目录
-        final downloadDir = Directory('/storage/emulated/0/Download');
-        if (await downloadDir.exists()) {
-          backupPath = '${downloadDir.path}/20timer_backup';
-          print('使用公共下载目录: $backupPath');
-        } else {
-          throw Exception('下载目录不存在');
-        }
-      } catch (e) {
-        print('无法访问公共目录，使用应用目录: $e');
-        // 如果无法访问公共目录，回退到应用目录
-        final externalDir = await getExternalStorageDirectory();
-        if (externalDir == null) {
-          throw Exception('无法获取外部存储目录');
-        }
-        backupPath = '${externalDir.path}/20timer_backup';
-      }
+      // 使用应用内部存储目录，无需任何权限
+      final appDir = await getApplicationDocumentsDirectory();
+      String backupPath = '${appDir.path}/20timer_backup';
+      print('使用应用内部存储目录: $backupPath');
 
       // 创建或清空备份目录
       final backupDir = Directory(backupPath);
       if (await backupDir.exists()) {
         // 如果目录存在，删除所有内容
-        await backupDir.delete(recursive: true);
+        try {
+          await backupDir.delete(recursive: true);
+        } catch (e) {
+          print('删除旧备份目录失败: $e');
+          // 如果删除失败，尝试使用新的目录名
+          backupPath = '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
+          final newBackupDir = Directory(backupPath);
+          await newBackupDir.create(recursive: true);
+          print('使用新备份目录: $backupPath');
+        }
       }
-      await backupDir.create(recursive: true);
+
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+      }
 
       print('备份目录: ${backupDir.path}');
 
@@ -393,35 +490,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('配置已成功导出到下载文件夹'),
-                    Text(backupDir.path, style: const TextStyle(fontSize: 12)),
-                    const Text('导入时请选择此文件夹', style: TextStyle(fontSize: 12)),
+                    const Text('配置已成功导出'),
+                    const Text('导入时将自动查找备份文件', style: TextStyle(fontSize: 12)),
+                    const Text('无需手动选择文件夹', style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 duration: const Duration(seconds: 3),
                 backgroundColor: Colors.green,
                 behavior: SnackBarBehavior.floating,
                 dismissDirection: DismissDirection.horizontal,
-                action: SnackBarAction(
-                  label: '复制路径',
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: backupDir.path));
-                    // 显示简短的复制成功提示
-                    if (mounted &&
-                        context.mounted &&
-                        Navigator.of(context).mounted) {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('路径已复制到剪贴板'),
-                          duration: Duration(seconds: 2),
-                          backgroundColor: Colors.blue,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                ),
               ),
             );
           }
@@ -443,127 +520,334 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // 测试文件访问权限
+  Future<bool> _testFileAccess(String directoryPath) async {
+    try {
+      final testDir = Directory(directoryPath);
+      if (!await testDir.exists()) {
+        print('测试目录不存在: $directoryPath');
+        return false;
+      }
+
+      // 尝试列出目录内容
+      await testDir.list().toList();
+      print('目录访问测试成功: $directoryPath');
+      return true;
+    } catch (e) {
+      print('目录访问测试失败: $directoryPath - $e');
+      return false;
+    }
+  }
+
   // 导入配置
   Future<void> _importConfig() async {
     try {
-      // 选择备份文件夹
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: '选择备份文件夹',
-        initialDirectory: '/storage/emulated/0/',
-      );
+      // 自动查找备份文件夹
+      String? backupPath;
 
-      if (selectedDirectory == null) return;
+      // 首先尝试在应用内部存储中查找
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final internalBackupPath = '${appDir.path}/20timer_backup';
+        final internalBackupDir = Directory(internalBackupPath);
 
-      final backupDir = Directory(selectedDirectory);
+        if (await internalBackupDir.exists()) {
+          // 检查是否包含配置文件
+          final configFile = File('$internalBackupPath/config.json');
+          if (await configFile.exists()) {
+            backupPath = internalBackupPath;
+            print('找到内部备份: $backupPath');
+          }
+        }
+      } catch (e) {
+        print('检查内部备份失败: $e');
+      }
+
+      // 如果内部没有找到，尝试外部存储
+      if (backupPath == null) {
+        try {
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            final externalBackupPath = '${externalDir.path}/20timer_backup';
+            final externalBackupDir = Directory(externalBackupPath);
+
+            if (await externalBackupDir.exists()) {
+              final configFile = File('$externalBackupPath/config.json');
+              if (await configFile.exists()) {
+                backupPath = externalBackupPath;
+                print('找到外部备份: $backupPath');
+              }
+            }
+          }
+        } catch (e) {
+          print('检查外部备份失败: $e');
+        }
+      }
+
+      // 如果自动查找失败，让用户手动选择
+      if (backupPath == null) {
+        print('未找到自动备份，请求用户手动选择');
+
+        // 显示对话框询问用户
+        final shouldManualSelect = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('未找到备份文件'),
+            content: const Text('系统未找到自动备份文件，是否手动选择备份文件夹？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('手动选择'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldManualSelect != true) {
+          return; // 用户取消
+        }
+
+        // 用户选择手动选择
+        final appDir = await getApplicationDocumentsDirectory();
+        final selectedDirectory = await FilePicker.platform.getDirectoryPath(
+          dialogTitle: '选择备份文件夹',
+          initialDirectory: appDir.path,
+        );
+
+        if (selectedDirectory == null || selectedDirectory.isEmpty) {
+          throw Exception('未选择有效的备份文件夹');
+        }
+
+        backupPath = selectedDirectory;
+        print('用户手动选择的目录: $backupPath');
+      }
+
+      if (backupPath == null || backupPath.isEmpty) {
+        throw Exception('未找到有效的备份文件夹');
+      }
+
+      final backupDir = Directory(backupPath);
+      print('选择的备份目录: ${backupDir.path}');
+
+      // 测试目录访问权限
+      final canAccess = await _testFileAccess(backupPath);
+      if (!canAccess) {
+        throw Exception('无法访问选择的文件夹，可能是权限问题\n路径: $backupPath');
+      }
+
       if (!await backupDir.exists()) {
-        throw Exception('选择的文件夹不存在');
+        throw Exception('选择的文件夹不存在: $backupPath');
       }
 
       // 查找配置文件
       final configFile = File('${backupDir.path}/config.json');
+      print('尝试访问配置文件: ${configFile.path}');
+
+      // 检查目录内容
+      try {
+        final files = await backupDir.list().toList();
+        print('目录内容:');
+        for (final file in files) {
+          print('  - ${file.path.split('/').last}');
+        }
+      } catch (e) {
+        print('无法列出目录内容: $e');
+      }
+
       if (!await configFile.exists()) {
-        throw Exception('在选择的文件夹中未找到 config.json 文件');
+        throw Exception('在选择的文件夹中未找到 config.json 文件\n路径: ${configFile.path}');
       }
 
       // 读取配置文件
-      final configContent = await configFile.readAsString();
-      final configData = jsonDecode(configContent) as Map<String, dynamic>;
+      String configContent;
+      try {
+        print('开始读取配置文件...');
+        configContent = await configFile.readAsString();
+        if (configContent.isEmpty) {
+          throw Exception('配置文件为空');
+        }
+        print('配置文件大小: ${configContent.length} 字符');
+        print(
+          '配置文件前100个字符: ${configContent.substring(0, configContent.length > 100 ? 100 : configContent.length)}',
+        );
+      } catch (e) {
+        print('读取配置文件时发生错误: $e');
+        print('错误类型: ${e.runtimeType}');
+        print('错误详情: ${e.toString()}');
+
+        if (e.toString().contains('Permission denied')) {
+          throw Exception('权限被拒绝，无法读取配置文件\n请检查文件权限或重新选择文件夹\n错误详情: $e');
+        } else if (e.toString().contains('No such file')) {
+          throw Exception('配置文件不存在\n请确保选择了正确的备份文件夹\n错误详情: $e');
+        } else if (e.toString().contains('Access denied')) {
+          throw Exception('访问被拒绝，可能是权限问题\n请尝试重新选择文件夹或检查权限设置\n错误详情: $e');
+        } else {
+          throw Exception('读取配置文件失败\n错误详情: $e');
+        }
+      }
+
+      // 解析JSON
+      Map<String, dynamic> configData;
+      try {
+        configData = jsonDecode(configContent) as Map<String, dynamic>;
+        print('JSON解析成功，包含 ${configData.length} 个顶级字段');
+      } catch (e) {
+        if (e.toString().contains('Unexpected character')) {
+          throw Exception('配置文件格式错误：包含无效字符\n请确保文件未被损坏');
+        } else if (e.toString().contains('Unexpected end of input')) {
+          throw Exception('配置文件不完整：文件可能被截断\n请重新导出配置');
+        } else {
+          throw Exception('配置文件格式错误: $e');
+        }
+      }
 
       // 验证版本
       final version = configData['version'] as String?;
       if (version == null || !version.startsWith('1.')) {
-        throw Exception('不支持的配置文件版本');
+        throw Exception('不支持的配置文件版本: $version');
       }
 
       final prefs = await SharedPreferences.getInstance();
 
       // 恢复用户信息
-      final userInfo = configData['userInfo'] as Map<String, dynamic>;
-      await prefs.setString('user_name', userInfo['userName'] ?? '开狼');
+      final userInfo = configData['userInfo'] as Map<String, dynamic>?;
+      if (userInfo != null) {
+        await prefs.setString('user_name', userInfo['userName'] ?? '开狼');
+      }
 
       // 恢复图片文件
       final appDir = await getApplicationDocumentsDirectory();
 
       // 恢复头像
-      if (userInfo['avatarPath'] != null) {
-        final avatarSourcePath = '${backupDir.path}/${userInfo['avatarPath']}';
-        if (await File(avatarSourcePath).exists()) {
-          final avatarDestPath =
-              '${appDir.path}/user_avatar_${DateTime.now().millisecondsSinceEpoch}.png';
-          await File(avatarSourcePath).copy(avatarDestPath);
-          await prefs.setString('user_avatar_path', avatarDestPath);
-          setState(() => _avatarPath = avatarDestPath);
+      if (userInfo?['avatarPath'] != null) {
+        try {
+          final avatarSourcePath =
+              '${backupDir.path}/${userInfo!['avatarPath']}';
+          final avatarFile = File(avatarSourcePath);
+          if (await avatarFile.exists()) {
+            final avatarDestPath =
+                '${appDir.path}/user_avatar_${DateTime.now().millisecondsSinceEpoch}.png';
+            await avatarFile.copy(avatarDestPath);
+            await prefs.setString('user_avatar_path', avatarDestPath);
+            setState(() => _avatarPath = avatarDestPath);
+            print('头像恢复成功: $avatarDestPath');
+          } else {
+            print('头像文件不存在: $avatarSourcePath');
+          }
+        } catch (e) {
+          print('恢复头像失败: $e');
         }
       }
 
       // 恢复侧边栏背景
-      if (userInfo['drawerBgPath'] != null) {
-        final bgSourcePath = '${backupDir.path}/${userInfo['drawerBgPath']}';
-        if (await File(bgSourcePath).exists()) {
-          final bgDestPath =
-              '${appDir.path}/drawer_bg_${DateTime.now().millisecondsSinceEpoch}.png';
-          await File(bgSourcePath).copy(bgDestPath);
-          await prefs.setString('drawer_bg_path', bgDestPath);
-          setState(() => _drawerBgPath = bgDestPath);
+      if (userInfo?['drawerBgPath'] != null) {
+        try {
+          final bgSourcePath = '${backupDir.path}/${userInfo!['drawerBgPath']}';
+          final bgFile = File(bgSourcePath);
+          if (await bgFile.exists()) {
+            final bgDestPath =
+                '${appDir.path}/drawer_bg_${DateTime.now().millisecondsSinceEpoch}.png';
+            await bgFile.copy(bgDestPath);
+            await prefs.setString('drawer_bg_path', bgDestPath);
+            setState(() => _drawerBgPath = bgDestPath);
+            print('背景图片恢复成功: $bgDestPath');
+          } else {
+            print('背景图片文件不存在: $bgSourcePath');
+          }
+        } catch (e) {
+          print('恢复背景图片失败: $e');
         }
       }
 
       // 恢复技能数据
-      final skillsData = configData['skills'] as Map<String, dynamic>;
-      final List<Skill> allSkills = [];
+      final skillsData = configData['skills'] as Map<String, dynamic>?;
+      if (skillsData != null) {
+        final List<Skill> allSkills = [];
 
-      // 恢复主页面技能
-      final mainSkills = skillsData['mainSkills'] as List<dynamic>;
-      for (final skillData in mainSkills) {
-        final skill = Skill.fromMap(Map<String, dynamic>.from(skillData));
-        allSkills.add(skill);
-      }
+        // 恢复主页面技能
+        final mainSkills = skillsData['mainSkills'] as List<dynamic>? ?? [];
+        for (final skillData in mainSkills) {
+          try {
+            final skill = Skill.fromMap(Map<String, dynamic>.from(skillData));
+            allSkills.add(skill);
+          } catch (e) {
+            print('解析主页面技能失败: $e');
+          }
+        }
 
-      // 恢复荣耀殿堂技能
-      final hallSkills = skillsData['hallOfGlorySkills'] as List<dynamic>;
-      for (final skillData in hallSkills) {
-        final skill = Skill.fromMap(Map<String, dynamic>.from(skillData));
-        allSkills.add(skill);
-      }
+        // 恢复荣耀殿堂技能
+        final hallSkills =
+            skillsData['hallOfGlorySkills'] as List<dynamic>? ?? [];
+        for (final skillData in hallSkills) {
+          try {
+            final skill = Skill.fromMap(Map<String, dynamic>.from(skillData));
+            allSkills.add(skill);
+          } catch (e) {
+            print('解析荣耀殿堂技能失败: $e');
+          }
+        }
 
-      // 保存技能数据
-      if (allSkills.isNotEmpty) {
-        final skillsAsString = allSkills
-            .map((s) => jsonEncode(s.toMap()))
-            .toList();
-        await prefs.setStringList('skills_list_key', skillsAsString);
-        await prefs.setInt(
-          'skills_list_key_timestamp',
-          DateTime.now().millisecondsSinceEpoch,
-        );
+        // 保存技能数据
+        if (allSkills.isNotEmpty) {
+          final skillsAsString = allSkills
+              .map((s) => jsonEncode(s.toMap()))
+              .toList();
+          await prefs.setStringList('skills_list_key', skillsAsString);
+          await prefs.setInt(
+            'skills_list_key_timestamp',
+            DateTime.now().millisecondsSinceEpoch,
+          );
+          print('成功恢复 ${allSkills.length} 个技能');
+        }
       }
 
       // 恢复技能日记
-      final diaries = configData['diaries'] as Map<String, dynamic>;
-      for (final entry in diaries.entries) {
-        final skillName = entry.key;
-        final diaryList = entry.value as List<dynamic>;
-        final diaryKey = 'skill_diary_$skillName';
-        await prefs.setStringList(diaryKey, diaryList.cast<String>());
+      final diaries = configData['diaries'] as Map<String, dynamic>?;
+      if (diaries != null) {
+        for (final entry in diaries.entries) {
+          try {
+            final skillName = entry.key;
+            final diaryList = entry.value as List<dynamic>? ?? [];
+            final diaryKey = 'skill_diary_$skillName';
+            await prefs.setStringList(diaryKey, diaryList.cast<String>());
+            print('恢复技能日记: $skillName (${diaryList.length} 条)');
+          } catch (e) {
+            print('恢复技能日记失败: ${entry.key} - $e');
+          }
+        }
       }
 
       // 恢复祝贺记录
       final congratulatedSkills =
-          configData['congratulatedSkills'] as List<dynamic>;
-      if (congratulatedSkills.isNotEmpty) {
-        await prefs.setStringList(
-          'congratulated_skill_ids',
-          congratulatedSkills.cast<String>(),
-        );
+          configData['congratulatedSkills'] as List<dynamic>?;
+      if (congratulatedSkills != null && congratulatedSkills.isNotEmpty) {
+        try {
+          await prefs.setStringList(
+            'congratulated_skill_ids',
+            congratulatedSkills.cast<String>(),
+          );
+          print('恢复祝贺记录: ${congratulatedSkills.length} 个技能');
+        } catch (e) {
+          print('恢复祝贺记录失败: $e');
+        }
       }
 
       // 恢复技能分组数据
-      final groupsData = configData['groups'] as List<dynamic>;
-      if (groupsData.isNotEmpty) {
-        final groups = groupsData
-            .map((g) => SkillGroup.fromMap(Map<String, dynamic>.from(g)))
-            .toList();
-        await GroupStorage.saveGroups(groups);
+      final groupsData = configData['groups'] as List<dynamic>?;
+      if (groupsData != null && groupsData.isNotEmpty) {
+        try {
+          final groups = groupsData
+              .map((g) => SkillGroup.fromMap(Map<String, dynamic>.from(g)))
+              .toList();
+          await GroupStorage.saveGroups(groups);
+          print('恢复技能分组: ${groups.length} 个分组');
+        } catch (e) {
+          print('恢复技能分组失败: $e');
+        }
       }
 
       // 更新用户名显示
@@ -572,11 +856,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted && context.mounted && Navigator.of(context).mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('配置导入成功，请重启应用以应用更改'),
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('配置导入成功！'),
+                const Text('请重启应用以应用所有更改', style: TextStyle(fontSize: 12)),
+              ],
+            ),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
+            dismissDirection: DismissDirection.horizontal,
           ),
         );
       }
@@ -586,10 +878,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('导入失败: $e'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('导入失败'),
+                Text(e.toString(), style: const TextStyle(fontSize: 12)),
+              ],
+            ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
             behavior: SnackBarBehavior.floating,
+            dismissDirection: DismissDirection.horizontal,
           ),
         );
       }
@@ -671,24 +971,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(height: 1),
               // 数据管理分组 - 存储权限
               _buildConnectedListTile(
-                icon: Icon(
-                  _hasStoragePermission ? Icons.check_circle : Icons.info,
-                  color: _hasStoragePermission ? Colors.green : Colors.blue,
-                ),
+                icon: Icon(Icons.check_circle, color: Colors.green),
                 title: const Text('存储权限'),
-                subtitle: const Text('用于访问外部存储，当前使用应用目录'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '已授予 - 使用应用内部存储',
+                      style: TextStyle(color: Colors.green, fontSize: 12),
+                    ),
+                    Text(
+                      '无需任何权限即可导出配置',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                    ),
+                  ],
+                ),
                 isFirst: true,
                 isLast: false,
-                onTap: _requestStoragePermission,
+                onTap: () async {
+                  await _checkStoragePermission();
+                  _requestStoragePermission();
+                },
               ),
               const Divider(height: 1),
               // 数据管理分组 - 导出配置
               _buildConnectedListTile(
                 icon: const Icon(Icons.file_download, color: Colors.green),
                 title: const Text('导出配置'),
-                subtitle: const Text(
-                  '位置：Download/20timer_backup（覆盖保存）',
-                  style: TextStyle(fontSize: 10),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '备份所有数据到应用内部存储',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    Text(
+                      '位置：应用内部/20timer_backup',
+                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                  ],
                 ),
                 isFirst: false,
                 isLast: false,
@@ -699,23 +1020,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildConnectedListTile(
                 icon: const Icon(Icons.file_upload, color: Colors.blue),
                 title: const Text('导入配置'),
-                subtitle: const Text(
-                  '选择20timer_backup文件夹加载数据',
-                  style: TextStyle(fontSize: 10),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '自动查找并恢复备份数据',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    Text(
+                      '无需手动选择文件夹',
+                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                  ],
                 ),
                 isFirst: false,
-                isLast: false,
+                isLast: true, // 改为最后一个
                 onTap: _importConfig,
-              ),
-              const Divider(height: 1),
-              // 数据管理分组 - 数据恢复
-              _buildConnectedListTile(
-                icon: const Icon(Icons.restore, color: Colors.orange),
-                title: const Text('数据恢复'),
-                subtitle: const Text('如果技能数据丢失，可以尝试恢复'),
-                isFirst: false,
-                isLast: true,
-                onTap: _restoreSkillsData,
               ),
               const Divider(height: 1),
               // 意见反馈邮箱
@@ -829,54 +1149,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
       ),
     );
-  }
-
-  // 恢复技能数据
-  Future<void> _restoreSkillsData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final backupData = prefs.getStringList('skills_list_key_backup');
-
-      if (backupData != null && backupData.isNotEmpty) {
-        // 恢复主数据
-        await prefs.setStringList('skills_list_key', backupData);
-        await prefs.setInt(
-          'skills_list_key_timestamp',
-          prefs.getInt('skills_list_key_backup_timestamp') ??
-              DateTime.now().millisecondsSinceEpoch,
-        );
-
-        if (mounted && context.mounted && Navigator.of(context).mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('技能数据已恢复，请重启应用'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } else {
-        if (mounted && context.mounted && Navigator.of(context).mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('没有找到备份数据'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted && context.mounted && Navigator.of(context).mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('恢复失败: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 }

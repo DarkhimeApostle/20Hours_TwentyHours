@@ -317,11 +317,17 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // 启动动画
-    _animationController.forward();
-    _stripeAnimationController.repeat(); // 条纹动画持续循环
+    // 延迟启动动画，优先加载数据
     _loadUserImages();
     _loadUserName();
+
+    // 延迟启动动画，避免阻塞启动
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _animationController.forward();
+        _stripeAnimationController.repeat();
+      }
+    });
   }
 
   @override

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
 
 // 技能详情页面，显示技能的详细信息和心情日记
 class SkillDetailsScreen extends StatefulWidget {
@@ -58,53 +57,6 @@ class _SkillDetailsScreenState extends State<SkillDetailsScreen> {
     await _saveDiary();
   }
 
-  // 导出日记为txt文件
-  Future<void> _exportDiary() async {
-    if (_diaryList.isEmpty) return;
-    String? exportPath;
-    // Android下保存到Downloads目录
-    try {
-      final downloadsDir = Directory('/storage/emulated/0/Download');
-      if (await downloadsDir.exists()) {
-        exportPath = '${downloadsDir.path}/${widget.skill.name}_diary.txt';
-      }
-    } catch (e) {}
-    // 兜底：如无权限或找不到则用应用目录
-    if (exportPath == null) {
-      final dir = await getApplicationDocumentsDirectory();
-      exportPath = '${dir.path}/${widget.skill.name}_diary.txt';
-    }
-    final file = File(exportPath);
-    final content = _diaryList.join('\n');
-    await file.writeAsString(content);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('已导出到: $exportPath')));
-  }
-
-  // 导入txt文件为日记
-  Future<void> _importDiary() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['txt'],
-    );
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      final lines = content
-          .split('\n')
-          .where((e) => e.trim().isNotEmpty)
-          .toList();
-      setState(() {
-        _diaryList = lines;
-      });
-      await _saveDiary();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('导入成功！')));
-    }
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -114,21 +66,7 @@ class _SkillDetailsScreenState extends State<SkillDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.skill.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            tooltip: '导出日记',
-            onPressed: _exportDiary,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: '导入日记',
-            onPressed: _importDiary,
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(widget.skill.name)),
       body: Column(
         children: [
           Expanded(
