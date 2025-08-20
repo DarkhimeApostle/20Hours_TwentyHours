@@ -12,16 +12,18 @@ import 'package:TwentyHours/models/skill_model.dart';
 import 'package:TwentyHours/screens/edit_skill_screen.dart';
 import 'hall_of_glory_screen.dart';
 import 'package:uuid/uuid.dart';
+import 'package:TwentyHours/utils/config_exporter.dart';
+import 'dart:async';
 
 // 主页面专属AppBar title组件
 class MainAppBarTitle extends StatelessWidget {
   final String? avatarPath;
   final String userName;
   const MainAppBarTitle({
-    Key? key,
+    super.key,
     required this.avatarPath,
     required this.userName,
-  }) : super(key: key);
+  });
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -41,10 +43,7 @@ class MainAppBarTitle extends StatelessWidget {
             ],
           ),
           child: ClipOval(
-            child:
-                (avatarPath != null &&
-                    avatarPath!.isNotEmpty &&
-                    File(avatarPath!).existsSync())
+            child: avatarPath != null && avatarPath!.isNotEmpty
                 ? Image.file(
                     File(avatarPath!),
                     width: 32,
@@ -81,7 +80,7 @@ class MainAppBarTitle extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Text(
-          userName,
+          userName.isNotEmpty ? userName : '开狼',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -103,13 +102,13 @@ class MainDrawer extends StatelessWidget {
   final VoidCallback onSettingsTap;
   final VoidCallback? onRefreshHome; // 添加刷新回调
   const MainDrawer({
-    Key? key,
+    super.key,
     required this.userName,
     required this.avatarPath,
     required this.drawerBgPath,
     required this.onSettingsTap,
     this.onRefreshHome, // 添加刷新回调参数
-  }) : super(key: key);
+  });
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -117,10 +116,7 @@ class MainDrawer extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image:
-                drawerBgPath != null &&
-                    drawerBgPath!.isNotEmpty &&
-                    File(drawerBgPath!).existsSync()
+            image: drawerBgPath != null && drawerBgPath!.isNotEmpty
                 ? FileImage(File(drawerBgPath!))
                 : const AssetImage('assets/images/drawer_bg.jpg')
                       as ImageProvider,
@@ -284,7 +280,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   late AnimationController _stripeAnimationController;
 
   // 条纹动画的偏移量
-  double _stripeOffset = 0.0;
+  final double _stripeOffset = 0.0;
 
   // 条纹间距
   final double stripeSpacing = 10.0;
@@ -292,6 +288,8 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   String? _avatarPath;
   String? _drawerBgPath;
   String _userName = '开狼';
+  bool _isDataLoaded = false;
+  Timer? _autoExportTimer; // 自动导出定时器
 
   // 初始化页面列表
   @override
@@ -317,23 +315,22 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // 延迟启动动画，优先加载数据
-    _loadUserImages();
-    _loadUserName();
+    // 立即启动动画，避免延迟
+    if (mounted) {
+      // 只在主页面时启动动画
+      _controlAnimationsForPage(_selectedIndex);
+    }
 
-    // 延迟启动动画，避免阻塞启动
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _animationController.forward();
-        _stripeAnimationController.repeat();
-      }
-    });
+    // 启动10秒后自动导出配置
+    _startAutoExportTimer();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 在didChangeDependencies中加载用户数据，避免阻塞AppBar渲染
     _loadUserImages();
+    _loadUserName();
   }
 
   // 添加页面激活监听
@@ -352,6 +349,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     setState(() {
       _avatarPath = prefs.getString('user_avatar_path');
       _drawerBgPath = prefs.getString('drawer_bg_path');
+      _isDataLoaded = true;
     });
   }
 
@@ -365,6 +363,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _userName = prefs.getString('user_name') ?? '开狼';
+      _isDataLoaded = true;
     });
   }
 
@@ -377,6 +376,26 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     // 如果切换到主界面，刷新数据
     if (index == 0) {
       _homeScreenKey.currentState?.loadSkills();
+    }
+
+    // 根据页面切换控制动画
+    _controlAnimationsForPage(index);
+  }
+
+  // 根据页面控制动画
+  void _controlAnimationsForPage(int pageIndex) {
+    // 只在主页面（index 0）时启动根页面的动画
+    if (pageIndex == 0) {
+      if (!_animationController.isAnimating) {
+        _animationController.forward();
+      }
+      if (!_stripeAnimationController.isAnimating) {
+        _stripeAnimationController.repeat();
+      }
+    } else {
+      // 其他页面时停止根页面的动画
+      _animationController.stop();
+      _stripeAnimationController.stop();
     }
   }
 
@@ -428,20 +447,21 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   }
 
   Widget buildUserAvatar(String? avatarPath, {double radius = 40}) {
-    if (avatarPath != null &&
-        avatarPath.isNotEmpty &&
-        File(avatarPath).existsSync()) {
+    if (avatarPath != null && avatarPath.isNotEmpty) {
       return CircleAvatar(
         backgroundImage: FileImage(File(avatarPath)),
         radius: radius,
+        onBackgroundImageError: (exception, stackTrace) {
+          // 图片加载失败时使用默认头像
+        },
       );
     } else {
       return CircleAvatar(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? kPrimaryColor.withOpacity(0.85)
             : kPrimaryColor,
-        child: Icon(Icons.person, color: Colors.white, size: radius),
         radius: radius,
+        child: Icon(Icons.person, color: Colors.white, size: radius),
       );
     }
   }
@@ -453,12 +473,15 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       key: _scaffoldKey, // 添加key
       appBar: AppBar(
         title: _selectedIndex == 0
-            ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
+            ? MainAppBarTitle(
+                avatarPath: _isDataLoaded ? _avatarPath : null,
+                userName: _userName,
+              )
             : (_selectedIndex == 1
                   ? const Text('使用说明')
                   : _selectedIndex == 2
                   ? const Text('关于')
-                  : null),
+                  : const Text('TwentyHours')),
         actions: _selectedIndex == 0
             ? [
                 IconButton(
@@ -484,8 +507,8 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
               },
               child: Stack(
                 children: [
-                  // 使用IndexedStack保持页面状态，避免重新创建
-                  IndexedStack(index: _selectedIndex, children: _pages),
+                  // 主页面使用IndexedStack保持状态
+                  IndexedStack(index: 0, children: [_pages[0]]),
                   // 只在计时页面显示悬浮按钮
                   AnimatedOpacity(
                     opacity: _selectedIndex == 0 ? 1.0 : 0.0,
@@ -513,7 +536,12 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                               borderRadius: BorderRadius.circular(40),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black12,
+                                  color: const Color.fromARGB(
+                                    31,
+                                    255,
+                                    255,
+                                    255,
+                                  ),
                                   blurRadius: 18,
                                   offset: const Offset(0, 6),
                                 ),
@@ -553,12 +581,9 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                 ],
               ),
             )
-          : Stack(
-              children: [
-                // 使用IndexedStack保持页面状态，避免重新创建
-                IndexedStack(index: _selectedIndex, children: _pages),
-              ],
-            ),
+          : _selectedIndex == 1
+          ? const InstructionScreen() // 说明界面直接创建新实例
+          : const AboutScreen(), // 关于界面直接创建新实例
 
       drawer: _selectedIndex == 0
           ? MainDrawer(
@@ -667,5 +692,22 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  // 启动自动导出定时器
+  void _startAutoExportTimer() {
+    _autoExportTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted) {
+        ConfigExporter.autoExportConfig();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _stripeAnimationController.dispose();
+    _autoExportTimer?.cancel(); // 取消自动导出定时器
+    super.dispose();
   }
 }

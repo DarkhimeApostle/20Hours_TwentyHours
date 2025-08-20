@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 import '../main.dart';
 
 // 关于页面
@@ -13,19 +11,20 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen>
     with TickerProviderStateMixin {
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
-  bool _isVideoInitialized = false;
+  bool _isLogoAnimationComplete = false;
   late AnimationController _fadeAnimationController;
   late AnimationController _slideAnimationController;
+  late AnimationController _logoAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _logoScaleAnimation;
+  late Animation<double> _logoOpacityAnimation;
+  late Animation<double> _logoRotationAnimation;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeVideo();
   }
 
   void _initializeAnimations() {
@@ -35,6 +34,10 @@ class _AboutScreenState extends State<AboutScreen>
     );
     _slideAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _logoAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000), // 1秒动画
       vsync: this,
     );
 
@@ -53,7 +56,34 @@ class _AboutScreenState extends State<AboutScreen>
           ),
         );
 
-    // 启动动画
+    _logoScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _logoOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _logoAnimationController, curve: Curves.easeIn),
+    );
+
+    _logoRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    // 启动logo动画
+    _logoAnimationController.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLogoAnimationComplete = true;
+        });
+      }
+    });
+
+    // 启动其他动画
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         _fadeAnimationController.forward();
@@ -62,46 +92,11 @@ class _AboutScreenState extends State<AboutScreen>
     });
   }
 
-  Future<void> _initializeVideo() async {
-    try {
-      // 这里可以替换为你的视频文件路径
-      // 暂时使用网络视频作为示例
-      _videoPlayerController = VideoPlayerController.network(
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      );
-
-      await _videoPlayerController!.initialize();
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
-        autoPlay: false,
-        looping: true,
-        aspectRatio: 16 / 9,
-        allowFullScreen: true,
-        allowMuting: true,
-        showControls: true,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: kPrimaryColor,
-          handleColor: kPrimaryColor,
-          backgroundColor: Colors.grey,
-          bufferedColor: Colors.grey.shade300,
-        ),
-      );
-
-      setState(() {
-        _isVideoInitialized = true;
-      });
-    } catch (e) {
-      debugPrint('Video initialization error: $e');
-    }
-  }
-
   @override
   void dispose() {
-    _videoPlayerController?.dispose();
-    _chewieController?.dispose();
     _fadeAnimationController.dispose();
     _slideAnimationController.dispose();
+    _logoAnimationController.dispose();
     super.dispose();
   }
 
@@ -111,48 +106,43 @@ class _AboutScreenState extends State<AboutScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          // 顶部视频区域
+          // 顶部Logo动画区域
           SliverToBoxAdapter(
-            child: Container(
-              height: 250,
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: _isVideoInitialized
-                    ? Chewie(controller: _chewieController!)
-                    : Container(
-                        color: Colors.grey.shade300,
-                        child: const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.video_library,
-                                size: 48,
-                                color: Colors.grey,
+            child: SizedBox(
+              height: 125, // 高度减半
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _logoAnimationController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _logoScaleAnimation.value,
+                      child: Transform.rotate(
+                        angle:
+                            _logoRotationAnimation.value * 2 * 3.14159, // 旋转一圈
+                        child: Opacity(
+                          opacity: _logoOpacityAnimation.value,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: kPrimaryColor,
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(40),
+                              child: Image.asset(
+                                'assets/logo/icon.png',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.contain,
                               ),
-                              SizedBox(height: 8),
-                              Text(
-                                '视频加载中...',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -306,6 +296,124 @@ class _AboutScreenState extends State<AboutScreen>
                         title: '归属记录',
                         description: '计时结束后选择对应的技能，系统会自动累加时长',
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // 好评提示区域
+          SliverToBoxAdapter(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '如果觉得不错',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? kTextMainDark
+                                  : kTextMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '可以到应用商店好评\n鼓励作者开发更多无广告应用',
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kTextSubDark
+                              : kTextSub,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      // const SizedBox(height: 20),
+                      // GestureDetector(
+                      //   onTap: () {
+                      //     // 显示好评提示
+                      //     ScaffoldMessenger.of(context).showSnackBar(
+                      //       const SnackBar(
+                      //         content: Text('感谢您的支持！请在应用商店搜索"T20"并给我们好评'),
+                      //         duration: Duration(seconds: 3),
+                      //         behavior: SnackBarBehavior.floating,
+                      //       ),
+                      //     );
+                      //   },
+                      //   child: Container(
+                      //     padding: const EdgeInsets.symmetric(
+                      //       horizontal: 20,
+                      //       vertical: 12,
+                      //     ),
+                      //     decoration: BoxDecoration(
+                      //       color: Colors.amber.withOpacity(0.1),
+                      //       borderRadius: BorderRadius.circular(25),
+                      //       border: Border.all(
+                      //         color: Colors.amber.withOpacity(0.3),
+                      //         width: 1,
+                      //       ),
+                      //     ),
+                      //     child: Row(
+                      //       mainAxisSize: MainAxisSize.min,
+                      //       children: [
+                      //         const Icon(
+                      //           Icons.star,
+                      //           color: Colors.amber,
+                      //           size: 20,
+                      //         ),
+                      //         const SizedBox(width: 8),
+                      //         Text(
+                      //           '去好评',
+                      //           style: TextStyle(
+                      //             fontSize: 16,
+                      //             fontWeight: FontWeight.w600,
+                      //             color: Colors.amber,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

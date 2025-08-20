@@ -10,7 +10,7 @@ import '../models/icon_map.dart';
 enum GlorySortType { timeDesc, nameAsc, custom }
 
 class HallOfGloryScreen extends StatefulWidget {
-  const HallOfGloryScreen({Key? key}) : super(key: key);
+  const HallOfGloryScreen({super.key});
 
   @override
   State<HallOfGloryScreen> createState() => _HallOfGloryScreenState();

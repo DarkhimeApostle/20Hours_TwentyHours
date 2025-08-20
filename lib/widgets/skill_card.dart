@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
 import '../main.dart';
-import 'dart:math';
 import 'package:TwentyHours/models/icon_map.dart';
 
 // 条纹绘制器

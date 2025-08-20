@@ -217,7 +217,7 @@ class InstructionScreen extends StatelessWidget {
                   ),
                 ),
               )
-              .toList(),
+              ,
         ],
       ),
     );

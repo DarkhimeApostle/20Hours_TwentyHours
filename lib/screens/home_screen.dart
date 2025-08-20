@@ -4,10 +4,10 @@ import 'package:TwentyHours/models/skill_model.dart';
 import 'package:TwentyHours/widgets/skill_card.dart';
 import 'package:TwentyHours/screens/skill_details_screen.dart';
 import 'package:TwentyHours/screens/edit_skill_screen.dart';
-import '../main.dart';
 import 'dart:convert';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:uuid/uuid.dart';
+import 'package:TwentyHours/utils/config_exporter.dart';
 
 // 计时主页面，显示技能列表
 class HomeScreen extends StatefulWidget {
@@ -59,7 +59,7 @@ class HomeScreenState extends State<HomeScreen> {
       );
 
       // 调试：打印本地技能存储内容
-      print('skills_list_key: ' + (skillsAsString?.join('\n') ?? 'null'));
+      print('skills_list_key: ${skillsAsString?.join('\n') ?? 'null'}');
 
       if (skillsAsString != null && skillsAsString.isNotEmpty) {
         try {
@@ -114,7 +114,7 @@ class HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    _checkAndShowCongratulation();
+    await _checkAndShowCongratulation();
   }
 
   // 创建默认技能
@@ -154,6 +154,9 @@ class HomeScreenState extends State<HomeScreen> {
         await prefs.setInt('skills_list_key_timestamp', timestamp);
 
         print('成功保存 ${skills.length} 个技能到本地存储');
+        
+        // 技能保存后自动导出配置
+        await ConfigExporter.autoExportConfig();
       } else {
         print('警告：尝试保存空的技能列表');
       }
@@ -388,7 +391,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   // 检查并弹出贺卡，只弹一次
-  void _checkAndShowCongratulation() {
+  Future<void> _checkAndShowCongratulation() async {
     if (_hasCheckedCongratulation) return;
     final ungloriedSkills = skills
         .where((s) => s.inHallOfGlory != true)
@@ -396,19 +399,17 @@ class HomeScreenState extends State<HomeScreen> {
     for (final skill in ungloriedSkills) {
       if (skill.progressBasedOn20Hours >= 1.0 && !skill.congratulated) {
         _hasCheckedCongratulation = true;
-        Future.delayed(Duration.zero, () async {
-          _showCongratulationCard(skill.name);
-          // 标记为已祝贺，永久保存
-          setState(() {
-            final idx = skills.indexOf(skill);
-            if (idx != -1) {
-              skills[idx] = skill.copyWith(congratulated: true);
-            }
-          });
-          await saveSkills();
-          // 保存到永久祝贺记录
-          await _addCongratulatedSkill(skill.id);
+        _showCongratulationCard(skill.name);
+        // 标记为已祝贺，永久保存
+        setState(() {
+          final idx = skills.indexOf(skill);
+          if (idx != -1) {
+            skills[idx] = skill.copyWith(congratulated: true);
+          }
         });
+        await saveSkills();
+        // 保存到永久祝贺记录
+        await _addCongratulatedSkill(skill.id);
         break; // 只弹一次
       }
     }

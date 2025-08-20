@@ -1,6 +1,5 @@
 import 'package:TwentyHours/screens/root_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:TwentyHours/secrets.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -50,7 +49,6 @@ class TwentyHours extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.light(
           primary: kPrimaryColor,
-          background: kBackgroundLight,
           surface: kCardLight,
         ),
         scaffoldBackgroundColor: kBackgroundLight,
@@ -121,11 +119,7 @@ class TwentyHours extends StatelessWidget {
         fontFamily: 'sans-serif',
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.dark(
-          primary: kButtonDark,
-          background: kBackgroundDark,
-          surface: kCardDark,
-        ),
+        colorScheme: ColorScheme.dark(primary: kButtonDark, surface: kCardDark),
         scaffoldBackgroundColor: kBackgroundDark,
         cardColor: kCardDark,
         appBarTheme: AppBarTheme(
@@ -193,7 +187,7 @@ class TwentyHours extends StatelessWidget {
         dividerColor: Colors.grey.shade800,
         fontFamily: 'sans-serif',
       ),
-      themeMode: ThemeMode.system, // 跟随系统深浅色
+      themeMode: ThemeMode.light, // 固定使用浅色主题
       debugShowCheckedModeBanner: false,
       home: const RootScreen(),
     );

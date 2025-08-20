@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 // 技能分组模型
 class SkillGroup {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:TwentyHours/models/skill_model.dart';
 import 'package:TwentyHours/main.dart';
-import '../models/skill_group.dart';
-import '../utils/group_storage.dart';
 import 'package:uuid/uuid.dart';
 
 // 预设分组颜色（与分组管理页保持一致）
@@ -279,8 +277,15 @@ class _EditSkillScreenState extends State<EditSkillScreen>
     }
   }
 
-  // 删除技能
+  // 删除技能或取消操作
   void _deleteSkill() {
+    // 如果是添加技能页面（skillIndex == null），直接退出
+    if (widget.skillIndex == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    
+    // 如果是编辑技能页面，显示确认删除对话框
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -750,15 +755,15 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _deleteSkill,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: widget.skillIndex == null ? Colors.grey : Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          '删除技能',
-                          style: TextStyle(fontSize: 14),
+                        child: Text(
+                          widget.skillIndex == null ? '取消' : '删除技能',
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                     ),
