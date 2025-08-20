@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _drawerBgPath;
   String _userName = '开发者';
   bool _hasStoragePermission = false;
+  bool _permissionChecked = false;
   final TextEditingController _userNameController = TextEditingController();
 
   @override
@@ -72,11 +73,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final hasPermission = await PermissionHelper.hasStoragePermission();
       setState(() {
         _hasStoragePermission = hasPermission;
+        _permissionChecked = true;
       });
     } catch (e) {
       print('检查存储权限时发生错误: $e');
       setState(() {
         _hasStoragePermission = false;
+        _permissionChecked = true;
       });
     }
   }
@@ -117,6 +120,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 保存图片到应用内部存储
       await _saveImageToLocal(imageFile, isAvatar);
 
+      // 通知主界面更新头像或背景
+      if (isAvatar) {
+        AppStateNotifier().notifyAvatarUpdated();
+      } else {
+        AppStateNotifier().notifyBackgroundUpdated();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // 使用应用内部存储目录
       final appDir = await getApplicationDocumentsDirectory();
-      String backupPath = '${appDir.path}/20timer_backup';
+      String backupPath = '${appDir.path}/t20_backup';
       print('使用应用内部存储目录: $backupPath');
 
       // 创建或清空备份目录
@@ -255,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       print('用户选择的导出目录: $selectedDirectory');
 
       // 创建备份目录
-      final backupPath = '$selectedDirectory/20timer_backup';
+      final backupPath = '$selectedDirectory/t20_backup';
       final backupDir = Directory(backupPath);
 
       if (await backupDir.exists()) {
@@ -436,7 +446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       
       // 直接在应用内部存储目录查找配置文件
       final appDir = await getApplicationDocumentsDirectory();
-      final backupPath = '${appDir.path}/20timer_backup';
+      final backupPath = '${appDir.path}/t20_backup';
       final configFile = File('$backupPath/config.json');
       
       print('查找配置文件: ${configFile.path}');
@@ -780,6 +790,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveUserName() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', _userName);
+    // 通知主界面更新用户名
+    AppStateNotifier().notifyUserNameUpdated();
   }
 
   @override
@@ -791,25 +803,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
         foregroundColor: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kTextMain,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         children: [
-          // 用户信息分组 - 压缩版
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
+          // 用户信息分组
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: ListTile(
-              title: const Text('用户信息'),
-              subtitle: Text('用户名：$_userName'),
+              title: const Text(
+                '用户信息',
+                style: TextStyle(color: Colors.grey),
+              ),
+              subtitle: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: '用户名：', style: TextStyle(color: Colors.grey)),
+                    TextSpan(text: _userName, style: TextStyle(color: Colors.black)),
+                  ],
+                ),
+              ),
               leading: const Icon(Icons.person),
               trailing: IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit, color: Colors.grey),
                 onPressed: () => _showUserNameDialog(),
               ),
             ),
           ),
 
-          // 个性化设置分组 - 压缩版
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
+          // 个性化设置分组
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Column(
               children: [
                 ListTile(
@@ -830,17 +860,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // 权限管理分组 - 压缩版
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
+          // 权限管理分组
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: ListTile(
               title: const Text('存储权限'),
-              subtitle: Text(_hasStoragePermission ? '已授予' : '未授予'),
+              subtitle: Text(_permissionChecked ? (_hasStoragePermission ? '已授予' : '未授予') : '检查中...'),
               leading: Icon(
-                _hasStoragePermission ? Icons.check_circle : Icons.error,
-                color: _hasStoragePermission ? Colors.green : Colors.red,
+                _permissionChecked ? (_hasStoragePermission ? Icons.check_circle : Icons.error) : Icons.hourglass_empty,
+                color: _permissionChecked ? (_hasStoragePermission ? Colors.green : Colors.red) : Colors.grey,
               ),
-              trailing: !_hasStoragePermission ? TextButton(
+              trailing: _permissionChecked && !_hasStoragePermission ? TextButton(
                 onPressed: () async {
                   await _checkStoragePermission();
                   _requestStoragePermission();
@@ -850,9 +884,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // 数据管理分组 - 压缩版
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
+          // 数据管理分组
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Column(
               children: [
                 ListTile(
@@ -884,29 +922,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('修改用户名'),
-          content: TextField(
-            controller: _userNameController,
-            decoration: const InputDecoration(
-              labelText: '用户名',
-              hintText: '请输入用户名',
+        return Transform.translate(
+          offset: const Offset(0, -100), // 往上移动100像素
+          child: AlertDialog(
+            title: const Text('修改用户名'),
+            content: TextField(
+              controller: _userNameController,
+              decoration: const InputDecoration(
+                labelText: '用户名',
+                hintText: '请输入用户名',
+              ),
+              onChanged: (value) => _userName = value,
             ),
-            onChanged: (value) => _userName = value,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _saveUserName();
+                  Navigator.of(context).pop();
+                },
+                child: const Text('保存'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _saveUserName();
-                Navigator.of(context).pop();
-              },
-              child: const Text('保存'),
-            ),
-          ],
         );
       },
     );

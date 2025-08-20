@@ -19,7 +19,7 @@
 - 已祝贺的技能ID列表
 
 ### 3. 导出位置
-- 配置文件保存在应用内部存储目录的 `20timer_backup` 文件夹中
+- 配置文件保存在应用内部存储目录的 `t20_backup` 文件夹中
 - 文件名为 `config.json`
 - 不包含头像和侧边栏背景图片文件
 
@@ -65,7 +65,7 @@ static Future<void> autoExportConfig() async {
 
 ```
 应用文档目录/
-└── 20timer_backup/
+└── t20_backup/
     └── config.json  # 自动导出的配置文件
 ```
 

@@ -1,4 +1,4 @@
-# _20timer
+# T20
 
 A new Flutter project.
 

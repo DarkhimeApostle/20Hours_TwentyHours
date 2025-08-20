@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:TwentyHours/screens/home_screen.dart';
-import 'package:TwentyHours/screens/generic_timer_screen.dart';
-import 'package:TwentyHours/screens/instruction_screen.dart';
+import 'package:t20/screens/home_screen.dart';
+import 'package:t20/screens/generic_timer_screen.dart';
+import 'package:t20/screens/instruction_screen.dart';
 import '../main.dart';
-import 'package:TwentyHours/screens/about_screen.dart';
-import 'package:TwentyHours/screens/settings_screen.dart';
-import 'package:TwentyHours/screens/statistics_screen.dart';
+import 'package:t20/screens/about_screen.dart';
+import 'package:t20/screens/settings_screen.dart';
+import 'package:t20/screens/statistics_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/skill_model.dart';
 import '../screens/edit_skill_screen.dart';
 import 'hall_of_glory_screen.dart';
 import 'package:uuid/uuid.dart';
-import 'package:TwentyHours/utils/config_exporter.dart';
+import 'package:t20/utils/config_exporter.dart';
 import '../utils/app_state_notifier.dart';
 import 'dart:async';
 
@@ -126,6 +126,10 @@ class MainDrawer extends StatelessWidget {
               Colors.black.withOpacity(0.1),
               BlendMode.darken,
             ),
+            onError: (exception, stackTrace) {
+              // 背景图片加载失败时的处理
+              print('Drawer背景图片加载失败: $exception');
+            },
           ),
         ),
         child: Column(
@@ -272,8 +276,10 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
     // 设置页面返回后刷新头像、背景和用户名
-    await _refreshUserImages();
-    await _loadUserName();
+    if (mounted) {
+      await _refreshUserImages();
+      await _loadUserName();
+    }
   }
 
   // 动画控制器
@@ -333,8 +339,10 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // 在didChangeDependencies中加载用户数据，避免阻塞AppBar渲染
-    _loadUserImages();
-    _loadUserName();
+    if (!_isDataLoaded) {
+      _loadUserImages();
+      _loadUserName();
+    }
   }
 
   // 应用状态变化处理
@@ -343,13 +351,15 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     // 先刷新数据，然后强制重建UI
     _refreshUserImages().then((_) {
       _loadUserName().then((_) {
-        setState(() {
-          // 强制重建UI以更新头像和侧边栏
-          print('RootScreen: UI重建完成，头像: $_avatarPath, 用户名: $_userName');
-        });
-        // 刷新主页面技能数据
-        if (_selectedIndex == 0) {
-          _homeScreenKey.currentState?.loadSkills();
+        if (mounted) {
+          setState(() {
+            // 强制重建UI以更新头像和侧边栏
+            print('RootScreen: UI重建完成，头像: $_avatarPath, 用户名: $_userName');
+          });
+          // 刷新主页面技能数据
+          if (_selectedIndex == 0) {
+            _homeScreenKey.currentState?.loadSkills();
+          }
         }
       });
     });
@@ -367,33 +377,55 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 加载自定义头像和背景路径
   Future<void> _loadUserImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _avatarPath = prefs.getString('user_avatar_path');
-      _drawerBgPath = prefs.getString('drawer_bg_path');
-      _isDataLoaded = true;
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _avatarPath = prefs.getString('user_avatar_path');
+          _drawerBgPath = prefs.getString('drawer_bg_path');
+        });
+      }
+    } catch (e) {
+      print('加载用户图片失败: $e');
+    }
   }
 
   // 刷新用户头像和背景
   Future<void> _refreshUserImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _avatarPath = prefs.getString('user_avatar_path');
-      _drawerBgPath = prefs.getString('drawer_bg_path');
-      _isDataLoaded = true;
-    });
-    print('RootScreen: 用户头像和背景已刷新 - 头像: $_avatarPath, 背景: $_drawerBgPath');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _avatarPath = prefs.getString('user_avatar_path');
+          _drawerBgPath = prefs.getString('drawer_bg_path');
+        });
+        print('RootScreen: 用户头像和背景已刷新 - 头像: $_avatarPath, 背景: $_drawerBgPath');
+      }
+    } catch (e) {
+      print('刷新用户图片失败: $e');
+    }
   }
 
   // 加载用户名
   Future<void> _loadUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userName = prefs.getString('user_name') ?? '开狼';
-      _isDataLoaded = true;
-    });
-    print('RootScreen: 用户名已刷新 - $_userName');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _userName = prefs.getString('user_name') ?? '开狼';
+          _isDataLoaded = true;
+        });
+        print('RootScreen: 用户名已刷新 - $_userName');
+      }
+    } catch (e) {
+      print('加载用户名失败: $e');
+      if (mounted) {
+        setState(() {
+          _userName = '开狼';
+          _isDataLoaded = true;
+        });
+      }
+    }
   }
 
   // 切换底部导航栏页面
@@ -501,16 +533,18 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     return Scaffold(
       key: _scaffoldKey, // 添加key
       appBar: AppBar(
-        title: _selectedIndex == 0
+        title: _selectedIndex == 0 && _isDataLoaded
             ? MainAppBarTitle(
-                avatarPath: _isDataLoaded ? _avatarPath : null,
+                avatarPath: _avatarPath,
                 userName: _userName,
               )
-            : (_selectedIndex == 1
+            : (_selectedIndex == 0 && !_isDataLoaded
+                  ? const Text('TwentyHours')
+                  : _selectedIndex == 1
                   ? const Text('使用说明')
                   : _selectedIndex == 2
                   ? const Text('关于')
-                  : const Text('TwentyHours')),
+                  : const Text('T20')),
         actions: _selectedIndex == 0
             ? [
                 IconButton(
@@ -614,7 +648,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
           ? const InstructionScreen() // 说明界面直接创建新实例
           : const AboutScreen(), // 关于界面直接创建新实例
 
-      drawer: _selectedIndex == 0
+      drawer: _selectedIndex == 0 && _isDataLoaded
           ? MainDrawer(
               userName: _userName,
               avatarPath: _avatarPath,
@@ -725,9 +759,13 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 启动自动导出定时器
   void _startAutoExportTimer() {
-    _autoExportTimer = Timer(const Duration(seconds: 10), () {
+    print('RootScreen: 启动15秒自动导出定时器');
+    _autoExportTimer = Timer(const Duration(seconds: 15), () {
+      print('RootScreen: 15秒定时器触发，开始自动导出配置');
       if (mounted) {
         ConfigExporter.autoExportConfig();
+      } else {
+        print('RootScreen: Widget已销毁，取消自动导出');
       }
     });
   }
@@ -736,7 +774,10 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   void dispose() {
     _animationController.dispose();
     _stripeAnimationController.dispose();
-    _autoExportTimer?.cancel(); // 取消自动导出定时器
+    if (_autoExportTimer != null) {
+      print('RootScreen: 取消自动导出定时器');
+      _autoExportTimer!.cancel();
+    }
     AppStateNotifier().removeListener(_onAppStateChanged); // 移除监听器
     super.dispose();
   }

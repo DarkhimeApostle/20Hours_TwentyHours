@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "_20timer" "\0"
+            VALUE "FileDescription", "T20" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "_20timer" "\0"
+            VALUE "InternalName", "T20" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "_20timer.exe" "\0"
-            VALUE "ProductName", "_20timer" "\0"
+            VALUE "OriginalFilename", "T20.exe" "\0"
+            VALUE "ProductName", "T20" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

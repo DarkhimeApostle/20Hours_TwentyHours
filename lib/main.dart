@@ -1,7 +1,7 @@
-import 'package:TwentyHours/screens/root_screen.dart';
+import 'package:t20/screens/root_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bugly/flutter_bugly.dart';
-import 'package:TwentyHours/secrets.dart';
+import 'package:t20/secrets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // 更深的现代清新风格主色
@@ -35,17 +35,17 @@ void main() async {
   // 异步请求存储权限，不阻塞启动
   Permission.storage.request();
 
-  runApp(const TwentyHours());
+  runApp(const T20());
 }
 
 // 应用主组件，负责全局主题和首页导航
-class TwentyHours extends StatelessWidget {
-  const TwentyHours({super.key});
+class T20 extends StatelessWidget {
+  const T20({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TwentyHours',
+      title: 'T20',
       theme: ThemeData(
         colorScheme: ColorScheme.light(
           primary: kPrimaryColor,

@@ -16,7 +16,7 @@ class FileAccessHelper {
     try {
       // 1. 应用内部存储目录（无需权限）
       final appDir = await getApplicationDocumentsDirectory();
-      final internalBackupDir = '${appDir.path}/20timer_backup';
+      final internalBackupDir = '${appDir.path}/t20_backup';
       directories.add(internalBackupDir);
       print('$_tag: 添加内部存储目录: $internalBackupDir');
 
@@ -25,7 +25,7 @@ class FileAccessHelper {
         try {
           final externalDir = await getExternalStorageDirectory();
           if (externalDir != null) {
-            final externalBackupDir = '${externalDir.path}/20timer_backup';
+            final externalBackupDir = '${externalDir.path}/t20_backup';
             directories.add(externalBackupDir);
             print('$_tag: 添加外部存储目录: $externalBackupDir');
           }
@@ -35,7 +35,7 @@ class FileAccessHelper {
 
         // 3. 尝试访问Download目录
         try {
-          final downloadDir = '/storage/emulated/0/Download/20timer_backup';
+          final downloadDir = '/storage/emulated/0/Download/t20_backup';
           if (await Directory(downloadDir).exists()) {
             directories.add(downloadDir);
             print('$_tag: 添加Download目录: $downloadDir');
@@ -47,7 +47,7 @@ class FileAccessHelper {
 
       // 4. 尝试访问Documents目录
       try {
-        final documentsDir = '/storage/emulated/0/Documents/20timer_backup';
+        final documentsDir = '/storage/emulated/0/Documents/t20_backup';
         if (await Directory(documentsDir).exists()) {
           directories.add(documentsDir);
           print('$_tag: 添加Documents目录: $documentsDir');
@@ -217,7 +217,7 @@ class FileAccessHelper {
     try {
       // 优先使用应用内部存储
       final appDir = await getApplicationDocumentsDirectory();
-      final backupDir = '${appDir.path}/20timer_backup';
+      final backupDir = '${appDir.path}/t20_backup';
       
       final directory = Directory(backupDir);
       if (!await directory.exists()) {

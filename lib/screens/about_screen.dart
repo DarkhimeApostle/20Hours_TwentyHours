@@ -343,9 +343,9 @@ class _AboutScreenState extends State<AboutScreen>
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '如果觉得不错',
+                            '应用商店好评❤',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color:
                                   Theme.of(context).brightness ==
@@ -358,7 +358,7 @@ class _AboutScreenState extends State<AboutScreen>
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '可以到应用商店好评\n鼓励作者开发更多无广告应用',
+                        '鼓励作者~开发更多无广告软件',
                         style: TextStyle(
                           fontSize: 16,
                           height: 1.5,

@@ -17,7 +17,7 @@
 -dontwarn com.google.android.play.core.**
 
 # 保留应用相关类
--keep class com.example.u_20timer.** { *; }
+-keep class com.example.t20.** { *; }
 
 # 保留 native 方法
 -keepclasseswithmembernames class * {

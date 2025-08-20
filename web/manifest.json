@@ -1,6 +1,6 @@
 {
-    "name": "_20timer",
-    "short_name": "_20timer",
+      "name": "T20",
+  "short_name": "T20",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#03ADCF",

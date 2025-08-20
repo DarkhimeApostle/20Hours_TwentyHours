@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/skill_model.dart';
-import 'package:TwentyHours/main.dart';
+import 'package:t20/main.dart';
 import 'package:uuid/uuid.dart';
 
 // 预设分组颜色（与分组管理页保持一致）

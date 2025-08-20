@@ -1,4 +1,4 @@
-package com.example.u_20timer
+package com.example.t20
 
 import io.flutter.embedding.android.FlutterActivity
 

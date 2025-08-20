@@ -9,11 +9,12 @@ import '../utils/group_storage.dart';
 class ConfigExporter {
   // 自动导出配置（不包含头像和侧边栏背景）
   static Future<void> autoExportConfig() async {
+    print('ConfigExporter: 开始自动导出配置');
     try {
       // 使用应用内部存储目录
       final appDir = await getApplicationDocumentsDirectory();
-      String backupPath = '${appDir.path}/20timer_backup';
-      print('自动导出配置到: $backupPath');
+      String backupPath = '${appDir.path}/t20_backup';
+      print('ConfigExporter: 自动导出配置到: $backupPath');
 
       // 创建或清空备份目录
       final backupDir = Directory(backupPath);
@@ -130,10 +131,11 @@ class ConfigExporter {
       final configJson = jsonEncode(configData);
       await configFile.writeAsString(configJson);
 
-      print('自动导出配置文件成功: ${configFile.path}');
-      print('配置文件内容长度: ${configJson.length} 字符');
+      print('ConfigExporter: 自动导出配置文件成功: ${configFile.path}');
+      print('ConfigExporter: 配置文件内容长度: ${configJson.length} 字符');
+      print('ConfigExporter: 自动导出配置完成');
     } catch (e) {
-      print('自动导出配置失败: $e');
+      print('ConfigExporter: 自动导出配置失败: $e');
     }
   }
 }
