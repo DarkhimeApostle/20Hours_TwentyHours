@@ -52,7 +52,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     final allSkills = list
         .map((e) => Skill.fromMap(Map<String, dynamic>.from(jsonDecode(e))))
         .toList();
-    // 更新分组内技能顺序
+    // 更新分组内技能顺�?
     for (final skill in _skills) {
       final i = allSkills.indexWhere(
         (s) => s.name == skill.name && s.groupId == skill.groupId,
@@ -75,7 +75,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       } else if (type == 'name') {
         _skills.sort((a, b) => a.name.compareTo(b.name));
       }
-      // custom为手动拖动顺序
+      // custom为手动拖动顺�?
     });
   }
 
@@ -104,7 +104,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     if (otherGroups.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('暂无其它分组可移动')));
+      ).showSnackBar(const SnackBar(content: Text('暂无其它分组可移�?)));
       return;
     }
     final newGroupId = await showDialog<String>(
@@ -131,7 +131,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       await _moveSkill(skill, newGroupId);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('已移动到新分组')));
+      ).showSnackBar(const SnackBar(content: Text('已移动到新分�?)));
     }
   }
 
@@ -152,12 +152,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.sort),
-            tooltip: '按累计时间排序',
+            tooltip: '按累计时间排�?,
             onPressed: () => _sortSkills('time'),
           ),
           IconButton(
             icon: const Icon(Icons.sort_by_alpha),
-            tooltip: '按名称排序',
+            tooltip: '按名称排�?,
             onPressed: () => _sortSkills('name'),
           ),
         ],
@@ -165,7 +165,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _skills.isEmpty
-          ? const Center(child: Text('该分组暂无技能'))
+          ? const Center(child: Text('该分组暂无技�?))
           : ReorderableListView(
               onReorder: (oldIndex, newIndex) {
                 setState(() {
@@ -185,14 +185,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       leading: const Icon(Icons.star), // 使用默认图标
                       title: Text(skill.name),
                       subtitle: Text(
-                        '累计时长：${skill.totalTime ~/ 3600}小时${(skill.totalTime % 3600) ~/ 60}分',
+                        '累计时长�?{skill.totalTime ~/ 3600}小时${(skill.totalTime % 3600) ~/ 60}�?,
                       ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (value) async {
                           if (value == 'remove') {
                             await _moveSkill(skill, null);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已移出分组')),
+                              const SnackBar(content: Text('已移出分�?)),
                             );
                           } else if (value == 'move') {
                             await _selectAndMoveSkill(skill);
@@ -205,7 +205,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           ),
                           const PopupMenuItem(
                             value: 'move',
-                            child: Text('移动到其它分组'),
+                            child: Text('移动到其它分�?),
                           ),
                         ],
                       ),

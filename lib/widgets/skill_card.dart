@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:TwentyHours/models/skill_model.dart';
+import '../models/skill_model.dart';
 import '../main.dart';
-import 'package:TwentyHours/models/icon_map.dart';
+import '../models/icon_map.dart';
 
 // 条纹绘制器
 class StripePainter extends CustomPainter {
@@ -99,16 +99,16 @@ class SkillCard extends StatefulWidget {
   // 技能数据
   final Skill skill;
   // 点击卡片时的回调
-  final VoidCallback onCardTapped;
+  final VoidCallback? onTap;
   // 长按卡片时的回调
-  final VoidCallback onCardLongPressed;
+  final VoidCallback? onLongPress;
 
   // 构造函数，要求传入技能数据和回调
   const SkillCard({
     super.key,
     required this.skill,
-    required this.onCardTapped,
-    required this.onCardLongPressed,
+    this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -116,91 +116,51 @@ class SkillCard extends StatefulWidget {
 }
 
 class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late AnimationController _stripeAnimationController;
-  late Animation<double> _progressAnimation;
-  late Animation<double> _pulseAnimation;
+  AnimationController? _stripeController;
+  AnimationController? _rainbowController;
+  Animation<double>? _stripeAnimation;
+  Animation<double>? _rainbowAnimation;
 
   @override
   void initState() {
     super.initState();
-
-    // 进度条动画控制器
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+    _stripeController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _rainbowController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
     );
 
-    // 条纹动画控制器（持续循环）
-    _stripeAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 4800),
-      vsync: this,
-    );
+    _stripeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_stripeController!);
 
-    // 进度条动画
-    _progressAnimation =
-        Tween<double>(
-          begin: 0.0,
-          end: widget.skill.progressBasedOn20Hours,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+    _rainbowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_rainbowController!);
 
-    // 脉冲动画（当进度接近完成时）
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    // 启动动画
-    _animationController.forward();
-    _stripeAnimationController.repeat(); // 条纹动画持续循环
+    _stripeController!.repeat();
+    _rainbowController!.repeat();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
-    _stripeAnimationController.dispose();
+    _stripeController?.dispose();
+    _rainbowController?.dispose();
     super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(SkillCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.skill.totalTime != widget.skill.totalTime) {
-      // 当技能时间更新时，重新播放动画
-      _progressAnimation =
-          Tween<double>(
-            begin: oldWidget.skill.progressBasedOn20Hours,
-            end: widget.skill.progressBasedOn20Hours,
-          ).animate(
-            CurvedAnimation(
-              parent: _animationController,
-              curve: Curves.easeOutCubic,
-            ),
-          );
-      _animationController.forward(from: 0.0);
-    }
-    // 检查duration是否变化，强制重建动画控制器
-    if (_stripeAnimationController.duration !=
-        const Duration(milliseconds: 4800)) {
-      _stripeAnimationController.dispose();
-      _stripeAnimationController = AnimationController(
-        duration: const Duration(milliseconds: 4800),
-        vsync: this,
-      )..repeat();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       // 点击事件
-      onTap: widget.onCardTapped,
+      onTap: widget.onTap,
       // 长按事件
-      onLongPress: widget.onCardLongPressed,
+      onLongPress: widget.onLongPress,
       // 卡片圆角
       borderRadius: BorderRadius.circular(20),
       child: Card(
@@ -255,8 +215,8 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
-                                  ? kTextSubDark
-                                  : kTextSub,
+                              ? kTextSubDark
+                              : kTextSub,
                             ),
                           ),
                         ),
@@ -278,28 +238,53 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 8),
                     // 动态进度条
-                    AnimatedBuilder(
-                      animation: _stripeAnimationController,
-                      builder: (context, child) {
-                        return Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(3),
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? kCardDark
-                                : kButtonLight,
-                          ),
-                          child: CustomPaint(
-                            painter: RainbowFlowProgressPainter(
-                              progress: _progressAnimation.value,
-                              animationValue: _stripeAnimationController.value,
+                    if (_stripeAnimation != null && _rainbowAnimation != null)
+                      AnimatedBuilder(
+                        animation: _stripeAnimation!,
+                        builder: (context, child) {
+                          return Container(
+                            height: 6,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              color:
+                                  Theme.of(context).brightness == Brightness.dark
+                                  ? kCardDark
+                                  : kButtonLight,
                             ),
-                            size: Size.infinite,
+                            child: CustomPaint(
+                              painter: RainbowFlowProgressPainter(
+                                progress: widget.skill.progressBasedOn20Hours,
+                                animationValue: _stripeAnimation!.value,
+                              ),
+                              size: Size.infinite,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      // 静态进度条（当动画未初始化时）
+                      Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                              ? kCardDark
+                              : kButtonLight,
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: widget.skill.progressBasedOn20Hours,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              color: widget.skill.progressBasedOn20Hours > 0.8
+                                  ? Colors.green
+                                  : kPrimaryColor,
+                            ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
                   ],
                 ),
               ),

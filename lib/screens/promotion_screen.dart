@@ -32,7 +32,7 @@ class PromotionScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '技能练习数据分析',
+              '技能练习数据分�?,
               style: TextStyle(
                 fontSize: 16,
                 color: kTextSub,
@@ -56,11 +56,11 @@ class PromotionScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildStatItem(context, '总练习时间', '0 小时', Icons.timer),
+                  _buildStatItem(context, '总练习时�?, '0 小时', Icons.timer),
                   const SizedBox(height: 16),
-                  _buildStatItem(context, '技能数量', '0 个', Icons.star),
+                  _buildStatItem(context, '技能数�?, '0 �?, Icons.star),
                   const SizedBox(height: 16),
-                  _buildStatItem(context, '完成目标', '0 个', Icons.check_circle),
+                  _buildStatItem(context, '完成目标', '0 �?, Icons.check_circle),
                 ],
               ),
             ),

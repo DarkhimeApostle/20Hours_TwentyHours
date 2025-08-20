@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 // import 'package:audioplayers/audioplayers.dart'; // 移除音效播放器相关依赖
-import 'package:TwentyHours/models/skill_model.dart';
-import 'package:TwentyHours/models/icon_map.dart';
-import 'package:TwentyHours/main.dart';
+import '../models/skill_model.dart';
+import '../models/icon_map.dart';
+import '../main.dart';
 
 // 通用计时页面，提供计时功能
 class GenericTimerScreen extends StatefulWidget {

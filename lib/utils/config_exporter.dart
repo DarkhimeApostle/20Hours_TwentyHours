@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:TwentyHours/models/skill_model.dart';
-import 'package:TwentyHours/utils/group_storage.dart';
+import '../models/skill_model.dart';
+import '../utils/group_storage.dart';
 
 // 配置导出工具类
 class ConfigExporter {
@@ -37,14 +37,14 @@ class ConfigExporter {
 
       final prefs = await SharedPreferences.getInstance();
 
-      // 收集配置数据（不包含头像和侧边栏背景）
+      // 收集配置数据（包含头像和侧边栏背景）
       final Map<String, dynamic> configData = {
         'version': '1.0',
         'exportTime': DateTime.now().toIso8601String(),
         'userInfo': {
-          'userName': prefs.getString('user_name') ?? '开狼',
-          'avatarPath': null, // 不包含头像
-          'drawerBgPath': null, // 不包含侧边栏背景
+          'userName': prefs.getString('user_name') ?? '开发者',
+          'avatarPath': prefs.getString('user_avatar_path'),
+          'drawerBgPath': prefs.getString('drawer_bg_path'),
         },
         'skills': {'mainSkills': [], 'hallOfGlorySkills': []},
         'diaries': {},
@@ -83,6 +83,47 @@ class ConfigExporter {
       // 获取技能分组数据
       final groups = await GroupStorage.loadGroups();
       configData['groups'] = groups.map((g) => g.toMap()).toList();
+
+      // 复制头像和背景图片
+      final avatarPath = prefs.getString('user_avatar_path');
+      if (avatarPath != null && avatarPath.isNotEmpty) {
+        try {
+          final avatarFile = File(avatarPath);
+          if (await avatarFile.exists()) {
+            // 保持原始文件扩展名
+            final extension = avatarPath.split('.').last;
+            final backupAvatarPath = '${backupDir.path}/avatar.$extension';
+            await avatarFile.copy(backupAvatarPath);
+            print('自动导出：头像已复制: $backupAvatarPath (原格式: $extension)');
+          } else {
+            print('自动导出：头像文件不存在: $avatarPath');
+          }
+        } catch (e) {
+          print('自动导出：复制头像失败: $e');
+        }
+      } else {
+        print('自动导出：没有头像路径');
+      }
+
+      final drawerBgPath = prefs.getString('drawer_bg_path');
+      if (drawerBgPath != null && drawerBgPath.isNotEmpty) {
+        try {
+          final bgFile = File(drawerBgPath);
+          if (await bgFile.exists()) {
+            // 保持原始文件扩展名
+            final extension = drawerBgPath.split('.').last;
+            final backupBgPath = '${backupDir.path}/drawer_bg.$extension';
+            await bgFile.copy(backupBgPath);
+            print('自动导出：背景图片已复制: $backupBgPath (原格式: $extension)');
+          } else {
+            print('自动导出：背景图片文件不存在: $drawerBgPath');
+          }
+        } catch (e) {
+          print('自动导出：复制背景图片失败: $e');
+        }
+      } else {
+        print('自动导出：没有背景图片路径');
+      }
 
       // 保存配置文件
       final configFile = File('${backupDir.path}/config.json');

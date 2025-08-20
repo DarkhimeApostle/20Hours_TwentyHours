@@ -449,10 +449,10 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                           ),
                                         ],
                                       ),
-                                      child: SkillCard(
-                                        skill: skill,
-                                        onCardTapped: () {},
-                                        onCardLongPressed: () {},
+                                      child:                 SkillCard(
+                  skill: skill,
+                  onTap: () {},
+                  onLongPress: () {},
                                       ),
                                     ),
                                   );

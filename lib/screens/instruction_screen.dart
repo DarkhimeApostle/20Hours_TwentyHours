@@ -7,41 +7,33 @@ class InstructionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? kBackgroundDark
+          : kBackgroundLight,
+      appBar: AppBar(
+        title: const Text('使用说明'),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? kBackgroundDark
+            : kBackgroundLight,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? kTextMainDark
+              : kTextMain,
+        ),
+        titleTextStyle: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? kTextMainDark
+              : kTextMain,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-
-            // 标题
-            Center(
-              child: Column(
-                children: [
-                  Icon(Icons.help_outline, size: 48, color: kPrimaryColor),
-                  const SizedBox(height: 12),
-                  Text(
-                    '使用说明',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? kTextMainDark
-                          : kTextMain,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '新手必读指南',
-                    style: TextStyle(fontSize: 14, color: kTextSub),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
             // 功能介绍
             _buildSection(
               context,
@@ -61,7 +53,7 @@ class InstructionScreen extends StatelessWidget {
               context,
               title: '📋 使用步骤',
               items: [
-                '1. 点击右上角"+"按钮添加新技能',
+                '1. 点击右上角的"+"按钮添加新技能',
                 '2. 设置技能名称、图标和目标时间',
                 '3. 点击底部悬浮按钮开始计时',
                 '4. 选择要练习的技能并开始计时',
@@ -149,7 +141,6 @@ class InstructionScreen extends StatelessWidget {
     );
   }
 
-  // 构建说明章节
   Widget _buildSection(
     BuildContext context, {
     required String title,
@@ -184,40 +175,35 @@ class InstructionScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...items
-              .map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(top: 8, right: 12),
-                        decoration: BoxDecoration(
-                          color: kPrimaryColor,
-                          shape: BoxShape.circle,
+          ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 6, right: 8),
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: kPrimaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? kTextSubDark
+                              : kTextSub,
+                          height: 1.4,
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          item,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? kTextMainDark
-                                : kTextMain,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              )
-              ,
+              )),
         ],
       ),
     );

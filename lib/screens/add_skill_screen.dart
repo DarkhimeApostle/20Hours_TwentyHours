@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// 添加新技能页面，允许用户输入技能名称
+// 添加新技能页面，允许用户输入技能名�?
 class AddSkillScreen extends StatefulWidget {
   const AddSkillScreen({super.key});
 
@@ -8,7 +8,7 @@ class AddSkillScreen extends StatefulWidget {
   State<AddSkillScreen> createState() => _AddSkillScreenState();
 }
 
-// AddSkillScreen的状态管理
+// AddSkillScreen的状态管�?
 class _AddSkillScreenState extends State<AddSkillScreen> {
   // 输入框控制器
   final _textController = TextEditingController();
@@ -23,7 +23,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('添加新技能')),
+      appBar: AppBar(title: const Text('添加新技�?)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -34,8 +34,8 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
               controller: _textController,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: '技能名称',
-                hintText: '例如：学习英语',
+                labelText: '技能名�?,
+                hintText: '例如：学习英�?,
                 border: OutlineInputBorder(),
               ),
             ),

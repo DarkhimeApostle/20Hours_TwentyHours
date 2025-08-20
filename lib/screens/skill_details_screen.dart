@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:TwentyHours/models/skill_model.dart';
+import '../models/skill_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 技能详情页面，显示技能的详细信息和心情日记

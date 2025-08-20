@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:TwentyHours/models/skill_model.dart';
-import 'package:TwentyHours/widgets/skill_card.dart';
-import 'package:TwentyHours/screens/skill_details_screen.dart';
-import 'package:TwentyHours/screens/edit_skill_screen.dart';
+import '../models/skill_model.dart';
+import '../widgets/skill_card.dart';
+import '../screens/skill_details_screen.dart';
+import '../screens/edit_skill_screen.dart';
 import 'dart:convert';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:uuid/uuid.dart';
-import 'package:TwentyHours/utils/config_exporter.dart';
+import '../utils/config_exporter.dart';
+import '../utils/app_state_notifier.dart';
 
 // 计时主页面，显示技能列表
 class HomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class HomeScreenState extends State<HomeScreen> {
   // 记录已弹窗的技能id，防止重复弹窗（持久化）
   Set<String> congratulatedSkillIds = {};
   // 用户名（如需动态可从用户信息获取）
-  final String userName = '开狼';
+  final String userName = '开发者';
   bool _hasCheckedCongratulation = false; // 防止重复弹窗
   bool _isInitialized = false; // 防止重复初始化
 
@@ -36,6 +37,21 @@ class HomeScreenState extends State<HomeScreen> {
     _loadCongratulatedSkills();
     loadSkills(); // 页面初始化时加载技能数据
     _validateDataIntegrity(); // 验证数据完整性
+    
+    // 监听应用状态变化
+    AppStateNotifier().addListener(_onAppStateChanged);
+  }
+
+  // 应用状态变化处理
+  void _onAppStateChanged() {
+    print('HomeScreen: 收到应用状态变化通知，重新加载技能数据');
+    loadSkills();
+  }
+
+  @override
+  void dispose() {
+    AppStateNotifier().removeListener(_onAppStateChanged);
+    super.dispose();
   }
 
   @override
@@ -245,7 +261,7 @@ class HomeScreenState extends State<HomeScreen> {
     saveSkills();
   }
 
-  // 添加新方法：累加技能时长
+  // 添加新方法：累加技能时间
   void addTimeToSkill(int index, int seconds) {
     if (index >= 0 && index < skills.length) {
       setState(() {
@@ -316,7 +332,7 @@ class HomeScreenState extends State<HomeScreen> {
                     Icon(Icons.emoji_events, color: Colors.amber, size: 56),
                     const SizedBox(height: 12),
                     Text(
-                      '恭喜你$userName',
+                      '恭喜，$userName',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -325,7 +341,7 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '技能$skillName已达成20小时积累！\n可以左滑卡片加入荣耀殿堂~',
+                      '技能"$skillName"已达到20小时积累！\n可以左滑卡片加入荣耀殿堂~',
                       style: const TextStyle(fontSize: 16),
                       textAlign: TextAlign.center,
                       maxLines: 3,
@@ -390,7 +406,7 @@ class HomeScreenState extends State<HomeScreen> {
     print('已添加技能到永久祝贺记录: $skillId');
   }
 
-  // 检查并弹出贺卡，只弹一次
+  // 检查并弹出贺卡，只弹一个
   Future<void> _checkAndShowCongratulation() async {
     if (_hasCheckedCongratulation) return;
     final ungloriedSkills = skills
@@ -410,7 +426,7 @@ class HomeScreenState extends State<HomeScreen> {
         await saveSkills();
         // 保存到永久祝贺记录
         await _addCongratulatedSkill(skill.id);
-        break; // 只弹一次
+        break; // 只弹一个
       }
     }
     _hasCheckedCongratulation = true;
@@ -522,16 +538,16 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
-              child: SkillCard(
-                skill: skill,
-                onCardTapped: () {
+              child:                 SkillCard(
+                  skill: skill,
+                  onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => SkillDetailsScreen(skill: skill),
                     ),
                   );
                 },
-                onCardLongPressed: () async {
+                                  onLongPress: () async {
                   final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(

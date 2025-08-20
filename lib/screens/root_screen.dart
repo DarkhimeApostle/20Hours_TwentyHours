@@ -8,11 +8,12 @@ import 'package:TwentyHours/screens/settings_screen.dart';
 import 'package:TwentyHours/screens/statistics_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:TwentyHours/models/skill_model.dart';
-import 'package:TwentyHours/screens/edit_skill_screen.dart';
+import '../models/skill_model.dart';
+import '../screens/edit_skill_screen.dart';
 import 'hall_of_glory_screen.dart';
 import 'package:uuid/uuid.dart';
 import 'package:TwentyHours/utils/config_exporter.dart';
+import '../utils/app_state_notifier.dart';
 import 'dart:async';
 
 // 主页面专属AppBar title组件
@@ -323,6 +324,9 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
     // 启动10秒后自动导出配置
     _startAutoExportTimer();
+
+    // 监听应用状态变化
+    AppStateNotifier().addListener(_onAppStateChanged);
   }
 
   @override
@@ -331,6 +335,24 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     // 在didChangeDependencies中加载用户数据，避免阻塞AppBar渲染
     _loadUserImages();
     _loadUserName();
+  }
+
+  // 应用状态变化处理
+  void _onAppStateChanged() {
+    print('RootScreen: 收到应用状态变化通知，刷新用户数据');
+    // 先刷新数据，然后强制重建UI
+    _refreshUserImages().then((_) {
+      _loadUserName().then((_) {
+        setState(() {
+          // 强制重建UI以更新头像和侧边栏
+          print('RootScreen: UI重建完成，头像: $_avatarPath, 用户名: $_userName');
+        });
+        // 刷新主页面技能数据
+        if (_selectedIndex == 0) {
+          _homeScreenKey.currentState?.loadSkills();
+        }
+      });
+    });
   }
 
   // 添加页面激活监听
@@ -355,7 +377,13 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 刷新用户头像和背景
   Future<void> _refreshUserImages() async {
-    await _loadUserImages();
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _avatarPath = prefs.getString('user_avatar_path');
+      _drawerBgPath = prefs.getString('drawer_bg_path');
+      _isDataLoaded = true;
+    });
+    print('RootScreen: 用户头像和背景已刷新 - 头像: $_avatarPath, 背景: $_drawerBgPath');
   }
 
   // 加载用户名
@@ -365,6 +393,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       _userName = prefs.getString('user_name') ?? '开狼';
       _isDataLoaded = true;
     });
+    print('RootScreen: 用户名已刷新 - $_userName');
   }
 
   // 切换底部导航栏页面
@@ -708,6 +737,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     _animationController.dispose();
     _stripeAnimationController.dispose();
     _autoExportTimer?.cancel(); // 取消自动导出定时器
+    AppStateNotifier().removeListener(_onAppStateChanged); // 移除监听器
     super.dispose();
   }
 }

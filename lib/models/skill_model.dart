@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'icon_map.dart';
 
 // 技能数据模型，描述一个技能的基本信息
 class Skill {
@@ -24,6 +26,15 @@ class Skill {
     this.congratulated = false,
     this.iconColor = 0xFF2563EB, // 默认主色
   });
+
+  // 获取当前时间（用于显示）
+  int get currentTime => totalTime;
+
+  // 获取颜色
+  Color get color => Color(iconColor);
+
+  // 获取图标
+  IconData get icon => skillIconMap[iconCodePoint] ?? Icons.help_outline;
 
   // 生成一个新的Skill对象，可选择性修改部分字段
   Skill copyWith({
@@ -55,7 +66,7 @@ class Skill {
     return copyWith(totalTime: totalTime + seconds);
   }
 
-  // 格式化显示累计时长
+  // 格式化显示累计时间
   String get formattedTime {
     final hours = totalTime ~/ 3600;
     final minutes = (totalTime % 3600) ~/ 60;

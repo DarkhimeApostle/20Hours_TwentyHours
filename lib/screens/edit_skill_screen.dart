@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:TwentyHours/models/skill_model.dart';
+import '../models/skill_model.dart';
 import 'package:TwentyHours/main.dart';
 import 'package:uuid/uuid.dart';
 
