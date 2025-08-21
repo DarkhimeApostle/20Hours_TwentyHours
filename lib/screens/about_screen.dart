@@ -11,7 +11,6 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen>
     with TickerProviderStateMixin {
-  bool _isLogoAnimationComplete = false;
   late AnimationController _fadeAnimationController;
   late AnimationController _slideAnimationController;
   late AnimationController _logoAnimationController;
@@ -75,13 +74,7 @@ class _AboutScreenState extends State<AboutScreen>
     );
 
     // 启动logo动画
-    _logoAnimationController.forward().then((_) {
-      if (mounted) {
-        setState(() {
-          _isLogoAnimationComplete = true;
-        });
-      }
-    });
+    _logoAnimationController.forward();
 
     // 启动其他动画
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -240,7 +233,7 @@ class _AboutScreenState extends State<AboutScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -254,7 +247,7 @@ class _AboutScreenState extends State<AboutScreen>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: kPrimaryColor.withOpacity(0.1),
+                              color: kPrimaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -319,7 +312,7 @@ class _AboutScreenState extends State<AboutScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -332,7 +325,7 @@ class _AboutScreenState extends State<AboutScreen>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -433,7 +426,9 @@ class _AboutScreenState extends State<AboutScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Theme.of(context).scaffoldBackgroundColor,
-                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
+                    Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -457,7 +452,7 @@ class _AboutScreenState extends State<AboutScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -468,7 +463,7 @@ class _AboutScreenState extends State<AboutScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 28),

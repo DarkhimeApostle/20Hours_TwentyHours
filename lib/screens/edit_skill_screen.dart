@@ -259,7 +259,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
         iconCodePoint: _selectedIconCodePoint,
         progress: widget.skill.progress, // 保持原有进度
         inHallOfGlory: widget.skill.inHallOfGlory,
-        iconColor: _selectedIconColor.value,
+        iconColor: _selectedIconColor.toARGB32(),
       );
 
       // 返回更新结果
@@ -284,7 +284,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
       Navigator.of(context).pop();
       return;
     }
-    
+
     // 如果是编辑技能页面，显示确认删除对话框
     showDialog(
       context: context,
@@ -372,7 +372,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -552,7 +552,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -670,7 +670,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                               thumbColor: Theme.of(context).colorScheme.primary,
                               overlayColor: Theme.of(
                                 context,
-                              ).colorScheme.primary.withOpacity(0.2),
+                              ).colorScheme.primary.withValues(alpha: 0.2),
                               trackHeight: 4,
                               thumbShape: const RoundSliderThumbShape(
                                 enabledThumbRadius: 6,
@@ -755,7 +755,9 @@ class _EditSkillScreenState extends State<EditSkillScreen>
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _deleteSkill,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: widget.skillIndex == null ? Colors.grey : Colors.red,
+                          backgroundColor: widget.skillIndex == null
+                              ? Colors.grey
+                              : Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

@@ -9,12 +9,10 @@ import '../utils/group_storage.dart';
 class ConfigExporter {
   // 自动导出配置（不包含头像和侧边栏背景）
   static Future<void> autoExportConfig() async {
-    print('ConfigExporter: 开始自动导出配置');
     try {
       // 使用应用内部存储目录
       final appDir = await getApplicationDocumentsDirectory();
       String backupPath = '${appDir.path}/t20_backup';
-      print('ConfigExporter: 自动导出配置到: $backupPath');
 
       // 创建或清空备份目录
       final backupDir = Directory(backupPath);
@@ -23,12 +21,10 @@ class ConfigExporter {
         try {
           await backupDir.delete(recursive: true);
         } catch (e) {
-          print('删除旧备份目录失败: $e');
           // 如果删除失败，尝试使用新的目录名
           backupPath = '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
           final newBackupDir = Directory(backupPath);
           await newBackupDir.create(recursive: true);
-          print('使用新备份目录: $backupPath');
         }
       }
 
@@ -95,16 +91,11 @@ class ConfigExporter {
             final extension = avatarPath.split('.').last;
             final backupAvatarPath = '${backupDir.path}/avatar.$extension';
             await avatarFile.copy(backupAvatarPath);
-            print('自动导出：头像已复制: $backupAvatarPath (原格式: $extension)');
-          } else {
-            print('自动导出：头像文件不存在: $avatarPath');
-          }
+          } else {}
         } catch (e) {
           print('自动导出：复制头像失败: $e');
         }
-      } else {
-        print('自动导出：没有头像路径');
-      }
+      } else {}
 
       final drawerBgPath = prefs.getString('drawer_bg_path');
       if (drawerBgPath != null && drawerBgPath.isNotEmpty) {
@@ -115,25 +106,16 @@ class ConfigExporter {
             final extension = drawerBgPath.split('.').last;
             final backupBgPath = '${backupDir.path}/drawer_bg.$extension';
             await bgFile.copy(backupBgPath);
-            print('自动导出：背景图片已复制: $backupBgPath (原格式: $extension)');
-          } else {
-            print('自动导出：背景图片文件不存在: $drawerBgPath');
-          }
+          } else {}
         } catch (e) {
           print('自动导出：复制背景图片失败: $e');
         }
-      } else {
-        print('自动导出：没有背景图片路径');
-      }
+      } else {}
 
       // 保存配置文件
       final configFile = File('${backupDir.path}/config.json');
       final configJson = jsonEncode(configData);
       await configFile.writeAsString(configJson);
-
-      print('ConfigExporter: 自动导出配置文件成功: ${configFile.path}');
-      print('ConfigExporter: 配置文件内容长度: ${configJson.length} 字符');
-      print('ConfigExporter: 自动导出配置完成');
     } catch (e) {
       print('ConfigExporter: 自动导出配置失败: $e');
     }

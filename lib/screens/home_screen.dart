@@ -37,14 +37,13 @@ class HomeScreenState extends State<HomeScreen> {
     _loadCongratulatedSkills();
     loadSkills(); // 页面初始化时加载技能数据
     _validateDataIntegrity(); // 验证数据完整性
-    
+
     // 监听应用状态变化
     AppStateNotifier().addListener(_onAppStateChanged);
   }
 
   // 应用状态变化处理
   void _onAppStateChanged() {
-    print('HomeScreen: 收到应用状态变化通知，重新加载技能数据');
     loadSkills();
   }
 
@@ -75,7 +74,6 @@ class HomeScreenState extends State<HomeScreen> {
       );
 
       // 调试：打印本地技能存储内容
-      print('skills_list_key: ${skillsAsString?.join('\n') ?? 'null'}');
 
       if (skillsAsString != null && skillsAsString.isNotEmpty) {
         try {
@@ -102,12 +100,10 @@ class HomeScreenState extends State<HomeScreen> {
               skills = loadedSkills;
               _hasCheckedCongratulation = false; // 每次加载后允许重新检查
             });
-            print('成功加载 ${loadedSkills.length} 个技能');
           } else {
             throw Exception('加载的技能列表为空');
           }
         } catch (parseError) {
-          print('解析技能数据失败: $parseError');
           // 如果解析失败，尝试从备份恢复
           await _restoreFromBackup();
           if (skills.isEmpty) {
@@ -115,7 +111,6 @@ class HomeScreenState extends State<HomeScreen> {
           }
         }
       } else {
-        print('没有找到技能数据，尝试从备份恢复');
         await _restoreFromBackup();
         if (skills.isEmpty) {
           _createDefaultSkill();
@@ -169,13 +164,9 @@ class HomeScreenState extends State<HomeScreen> {
         await prefs.setStringList('skills_list_key', skillsAsString);
         await prefs.setInt('skills_list_key_timestamp', timestamp);
 
-        print('成功保存 ${skills.length} 个技能到本地存储');
-        
         // 技能保存后自动导出配置
         await ConfigExporter.autoExportConfig();
-      } else {
-        print('警告：尝试保存空的技能列表');
-      }
+      } else {}
     } catch (e) {
       print('保存技能数据时发生错误: $e');
       // 可以在这里添加用户提示
@@ -205,7 +196,6 @@ class HomeScreenState extends State<HomeScreen> {
         // 恢复主数据
         await prefs.setStringList('skills_list_key', backupData);
 
-        print('从备份恢复了 ${restoredSkills.length} 个技能');
         if (mounted && context.mounted) {
           ScaffoldMessenger.of(
             context,
@@ -233,7 +223,6 @@ class HomeScreenState extends State<HomeScreen> {
         'congratulated_skill_ids',
         congratulatedSkillIds.toList(),
       );
-      print('已从永久祝贺记录中移除技能: ${skillToDelete.name}');
     }
   }
 
@@ -253,14 +242,6 @@ class HomeScreenState extends State<HomeScreen> {
     saveSkills();
   }
 
-  // 更新技能名称
-  void _updateSkill(int index, String newName) {
-    setState(() {
-      skills[index] = skills[index].copyWith(name: newName);
-    });
-    saveSkills();
-  }
-
   // 添加新方法：累加技能时间
   void addTimeToSkill(int index, int seconds) {
     if (index >= 0 && index < skills.length) {
@@ -269,32 +250,6 @@ class HomeScreenState extends State<HomeScreen> {
         final newTotalTime = oldSkill.totalTime + seconds;
         // 保持原有的祝贺状态，不再重置
         skills[index] = oldSkill.copyWith(totalTime: newTotalTime);
-      });
-      saveSkills();
-    }
-  }
-
-  // 跳转到添加技能页面（只用EditSkillScreen）
-  void _onAddSkillPressed() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditSkillScreen(
-          skill: Skill(
-            id: Uuid().v4(),
-            name: '',
-            totalTime: 0,
-            iconCodePoint: Icons.star_border.codePoint,
-            progress: 0.0,
-            groupId: null,
-          ),
-          skillIndex: null,
-        ),
-      ),
-    );
-    if (result != null && result['action'] == 'save') {
-      setState(() {
-        skills.add(result['skill']);
       });
       saveSkills();
     }
@@ -320,7 +275,7 @@ class HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.25),
+                      color: Colors.amber.withValues(alpha: 0.25),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -390,10 +345,6 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() {
       congratulatedSkillIds = ids.toSet();
     });
-    print('加载永久祝贺记录: ${congratulatedSkillIds.length} 个技能');
-    for (final id in congratulatedSkillIds) {
-      print('永久祝贺技能ID: $id');
-    }
   }
 
   Future<void> _addCongratulatedSkill(String skillId) async {
@@ -403,7 +354,6 @@ class HomeScreenState extends State<HomeScreen> {
       'congratulated_skill_ids',
       congratulatedSkillIds.toList(),
     );
-    print('已添加技能到永久祝贺记录: $skillId');
   }
 
   // 检查并弹出贺卡，只弹一个
@@ -442,14 +392,12 @@ class HomeScreenState extends State<HomeScreen> {
       // 检查主数据和备份数据的一致性
       if (mainData != null && backupData != null) {
         if (mainData.length != backupData.length) {
-          print('警告：主数据和备份数据长度不一致');
           // 使用较新的数据
           final mainTime = prefs.getInt('skills_list_key_timestamp') ?? 0;
           final backupTime =
               prefs.getInt('skills_list_key_backup_timestamp') ?? 0;
 
           if (backupTime > mainTime) {
-            print('使用备份数据恢复');
             await prefs.setStringList('skills_list_key', backupData);
             await prefs.setInt('skills_list_key_timestamp', backupTime);
           }
@@ -467,12 +415,6 @@ class HomeScreenState extends State<HomeScreen> {
     final ungloriedSkills = skills
         .where((s) => s.inHallOfGlory != true)
         .toList();
-
-    // 调试信息
-    print('主界面：总技能数 ${skills.length}，未进殿堂技能数 ${ungloriedSkills.length}');
-    for (final skill in skills) {
-      print('技能: ${skill.name}, inHallOfGlory: ${skill.inHallOfGlory}');
-    }
 
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -538,16 +480,16 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
-              child:                 SkillCard(
-                  skill: skill,
-                  onTap: () {
+              child: SkillCard(
+                skill: skill,
+                onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => SkillDetailsScreen(skill: skill),
                     ),
                   );
                 },
-                                  onLongPress: () async {
+                onLongPress: () async {
                   final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(
@@ -560,7 +502,6 @@ class HomeScreenState extends State<HomeScreen> {
                       _deleteSkill(result['skillIndex']);
                     } else if (result['action'] == 'save') {
                       setState(() {
-                        final oldSkill = skills[result['skillIndex']];
                         final newSkill = result['skill'];
                         // 保持原有的祝贺状态，不再重置
                         skills[result['skillIndex']] = newSkill;

@@ -20,10 +20,16 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   Timer? _timer;
   // 秒表对象
   final Stopwatch _stopwatch = Stopwatch();
-  // 显示的时间字符串
-  String _displayTime = '00:00:00';
   // 是否正在计时
   bool _isTimerRunning = false;
+
+  // 动画控制器
+  AnimationController? _pulseController;
+  AnimationController? _scaleController;
+  AnimationController? _rotateController;
+  Animation<double>? _pulseAnimation;
+  Animation<double>? _scaleAnimation;
+  Animation<double>? _rotateAnimation;
 
   // 移除音效播放器相关变量
   // final AudioPlayer _audioPlayer = AudioPlayer();
@@ -34,6 +40,35 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   @override
   void initState() {
     super.initState();
+
+    // 初始化动画控制器
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _rotateController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    // 初始化动画
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
+      CurvedAnimation(parent: _scaleController!, curve: Curves.easeInOut),
+    );
+
+    _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
+      CurvedAnimation(parent: _rotateController!, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -49,18 +84,32 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
     _timer?.cancel();
     _stopwatch.stop();
     // _audioPlayer.dispose(); // 移除音效播放器释放
+
+    // 释放动画控制器
+    _pulseController?.dispose();
+    _scaleController?.dispose();
+    _rotateController?.dispose();
+
     super.dispose();
   }
 
   // 切换计时/暂停
   void _toggleTimer() {
+    // 播放按钮点击动画 - 更明显的缩放效果
+    _scaleController?.forward().then((_) {
+      _scaleController?.reverse();
+    });
+
     setState(() {
       _isTimerRunning = !_isTimerRunning;
     });
+
     if (_isTimerRunning) {
       _startTimer();
+      // 移除持续脉冲动画，只在点击时有反馈
     } else {
       _stopTimer();
+      // 移除脉冲动画相关代码
     }
   }
 
@@ -70,7 +119,7 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (mounted) {
         setState(() {
-          _displayTime = _formatTime(_stopwatch.elapsed);
+          // 触发UI更新以刷新计时显示
         });
         // 移除每秒播放音效
         // if (_stopwatch.elapsedMilliseconds % 1000 < 60) {
@@ -90,14 +139,6 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   // 移除音效相关方法
   // Future<void> _playTickSound() async { ... }
 
-  // 格式化时间显示
-  String _formatTime(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-  }
-
   // 格式化时间显示，返回主时间和毫秒部分
   List<String> _formatTimeParts(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -112,13 +153,20 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
 
   // 结束计时
   void _finishTiming() async {
+    // 播放结束按钮动画
+    _rotateController?.forward().then((_) {
+      _rotateController?.reverse();
+    });
+
     _stopTimer();
+
+    // 移除脉冲动画相关代码
 
     // 检查是否有计时时间
     final elapsedTime = _stopwatch.elapsed;
     if (elapsedTime.inSeconds == 0) {
       // 没有计时，直接退出
-      debugPrint('No timing recorded, exiting timer page');
+
       Navigator.of(context).pop();
       return;
     }
@@ -131,17 +179,17 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
     );
 
     // 如果用户选择了技能，返回结果；如果取消，直接退出
-    debugPrint('Dialog result: $result');
-    if (result != null && result['skillIndex'] != null) {
-      debugPrint('User selected skill: ${result['skillIndex']}');
-      Navigator.of(context).pop({
-        'skillIndex': result['skillIndex'],
-        'duration': elapsedTime.inSeconds,
-      });
-    } else {
-      debugPrint('User cancelled, exiting timer page');
-      // 用户取消，直接退出计时页面
-      Navigator.of(context).pop();
+
+    if (mounted) {
+      if (result != null && result['skillIndex'] != null) {
+        Navigator.of(context).pop({
+          'skillIndex': result['skillIndex'],
+          'duration': elapsedTime.inSeconds,
+        });
+      } else {
+        // 用户取消，直接退出计时页面
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -197,7 +245,9 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
               ),
             ),
             const SizedBox(height: 40),
-            _buildTimerControls(),
+            _buildTimerControls(
+              endButtonVerticalOffset: 5.0,
+            ), // 可以通过这个参数调整结束按钮的上下距离
           ],
         ),
       ),
@@ -205,77 +255,101 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
   }
 
   // 构建计时控制按钮
-  Widget _buildTimerControls() {
+  Widget _buildTimerControls({double endButtonVerticalOffset = 0.0}) {
     return Padding(
       padding: const EdgeInsets.only(top: 20), // 整体下移
       child: Stack(
         children: [
           // 开始/暂停按钮 - 居中
           Center(
-            child: ElevatedButton(
-              onPressed: _toggleTimer,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isTimerRunning
-                    ? Colors.orangeAccent
-                    : Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.all(24),
-                shape: const CircleBorder(),
-                minimumSize: const Size(100, 100),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isTimerRunning ? Icons.pause : Icons.play_arrow,
-                    size: 70,
-                    color: const Color.fromARGB(255, 255, 255, 255),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isTimerRunning ? '暂停' : '开始',
-                    style: const TextStyle(
-                      fontSize: 12, // 调小字体
-                      color: Color.fromARGB(139, 255, 255, 255),
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'sans-serif', // 统一字体
+            child: AnimatedBuilder(
+              animation: _scaleAnimation ?? const AlwaysStoppedAnimation(1.0),
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation?.value ?? 1.0,
+                  child: ElevatedButton(
+                    onPressed: _toggleTimer,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isTimerRunning
+                          ? Colors.orangeAccent
+                          : Theme.of(context).colorScheme.primary,
+                      padding: const EdgeInsets.all(24),
+                      shape: const CircleBorder(),
+                      minimumSize: const Size(100, 100),
+                      elevation: _isTimerRunning ? 8 : 4,
+                      shadowColor: _isTimerRunning
+                          ? Colors.orangeAccent.withValues(alpha: 0.3)
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isTimerRunning ? Icons.pause : Icons.play_arrow,
+                          size: 70,
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _isTimerRunning ? '暂停' : '开始',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color.fromARGB(139, 255, 255, 255),
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'sans-serif',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
-          // 结束按钮 - 接近开始按钮
+          // 结束按钮 - 在开始按钮右边，可调整上下距离
           Positioned(
             right: 40,
-            bottom: 5,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                padding: const EdgeInsets.all(20),
-                shape: const CircleBorder(),
-                minimumSize: const Size(60, 60),
-              ),
-              onPressed: _finishTiming,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.stop,
-                    size: 24,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    '结束',
-                    style: TextStyle(
-                      fontSize: 12, // 调小字体，与开始按钮保持一致
-                      color: Color.fromARGB(131, 255, 255, 255),
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'sans-serif', // 统一字体
+            top: 50 + endButtonVerticalOffset, // 可调整的上下距离
+            child: AnimatedBuilder(
+              animation: _rotateAnimation ?? const AlwaysStoppedAnimation(0.0),
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _rotateAnimation?.value ?? 0.0,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.all(20),
+                      shape: const CircleBorder(),
+                      minimumSize: const Size(60, 60),
+                      elevation: 4,
+                      shadowColor: Colors.redAccent.withValues(alpha: 0.3),
+                    ),
+                    onPressed: _finishTiming,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.stop,
+                          size: 24,
+                          color: Color.fromARGB(255, 255, 255, 255),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          '结束',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color.fromARGB(131, 255, 255, 255),
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'sans-serif',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -288,7 +362,11 @@ class _GenericTimerScreenState extends State<GenericTimerScreen>
 class SkillSelectDialog extends StatefulWidget {
   final List<Skill> skills;
   final Duration duration;
-  const SkillSelectDialog({super.key, required this.skills, required this.duration});
+  const SkillSelectDialog({
+    super.key,
+    required this.skills,
+    required this.duration,
+  });
   @override
   State<SkillSelectDialog> createState() => _SkillSelectDialogState();
 }
@@ -451,11 +529,11 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
             width: double.infinity,
             height: 52, // 固定高度，更紧凑
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 3,
                   offset: const Offset(0, 1),
                 ),
@@ -469,7 +547,7 @@ class _SkillSelectDialogState extends State<SkillSelectDialog> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Color(skill.iconColor).withOpacity(0.15),
+                    color: Color(skill.iconColor).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(

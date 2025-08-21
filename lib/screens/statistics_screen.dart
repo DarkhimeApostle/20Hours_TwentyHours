@@ -56,7 +56,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         });
       }
     } catch (e) {
-      print('加载技能数据失败: $e');
       setState(() {
         _skills = [];
         _totalPracticeTime = 0;
@@ -77,7 +76,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   String _formatTime(int seconds) {
     final hours = seconds ~/ 3600;
     final minutes = (seconds % 3600) ~/ 60;
-    return '${hours}小时${minutes}分钟';
+    return '$hours小时$minutes分钟';
   }
 
   @override
@@ -149,8 +148,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             _buildOverallStatsCard(),
             const SizedBox(height: 16),
 
-
-
             // 技能统计表格
             _buildSkillsTable(),
           ],
@@ -170,7 +167,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -245,7 +242,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -255,9 +252,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         children: [
           // 表头
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: kPrimaryColor.withOpacity(0.1),
+              color: kPrimaryColor.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -267,16 +264,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               children: [
                 const SizedBox(width: 40), // 排名列宽度
                 Expanded(
-                  child: Text(
-                    '技能名称',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? kTextMainDark
-                          : kTextMain,
-                    ),
-                  ),
+                  child: Container(), // 移除技能名称标题
                 ),
               ],
             ),
@@ -305,8 +293,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             : Border(
                 bottom: BorderSide(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey.withOpacity(0.2)
-                      : Colors.grey.withOpacity(0.1),
+                      ? Colors.grey.withValues(alpha: 0.2)
+                      : Colors.grey.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -385,7 +373,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               Expanded(
                 child: LinearProgressIndicator(
                   value: progress / 100,
-                  backgroundColor: Colors.grey.withOpacity(0.2),
+                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     progress >= 100 ? Colors.green : kPrimaryColor,
                   ),

@@ -21,36 +21,38 @@ class PermissionHelper {
   static Future<bool> hasStoragePermission() async {
     try {
       final androidVersion = getAndroidVersion();
-      print('$_tag: 当前Android版本: $androidVersion');
 
       // 检查多种权限状态
       final storageStatus = await Permission.storage.status;
-      final manageExternalStorageStatus = await Permission.manageExternalStorage.status;
+      final manageExternalStorageStatus =
+          await Permission.manageExternalStorage.status;
       final photosStatus = await Permission.photos.status;
 
       bool hasPermission = false;
 
       if (androidVersion >= 30) {
         // Android 11+ (API 30+)
-        hasPermission = storageStatus.isGranted ||
+        hasPermission =
+            storageStatus.isGranted ||
             manageExternalStorageStatus.isGranted ||
             photosStatus.isGranted;
-        print('$_tag: Android 11+ 权限检查');
       } else if (androidVersion >= 29) {
         // Android 10 (API 29)
         hasPermission = storageStatus.isGranted;
-        print('$_tag: Android 10 权限检查');
       } else {
         // Android 8-9 (API 26-28)
         hasPermission = storageStatus.isGranted;
-        print('$_tag: Android 8-9 权限检查');
       }
 
-      _logPermissionStatus(storageStatus, manageExternalStorageStatus, photosStatus, hasPermission);
-      
+      _logPermissionStatus(
+        storageStatus,
+        manageExternalStorageStatus,
+        photosStatus,
+        hasPermission,
+      );
+
       return hasPermission;
     } catch (e) {
-      print('$_tag: 检查存储权限时发生错误: $e');
       return false;
     }
   }
@@ -59,7 +61,6 @@ class PermissionHelper {
   static Future<bool> requestStoragePermission(BuildContext? context) async {
     try {
       final androidVersion = getAndroidVersion();
-      print('$_tag: 正在请求存储权限... (Android $androidVersion)');
 
       if (androidVersion >= 30) {
         // Android 11+ 复杂权限处理
@@ -72,7 +73,6 @@ class PermissionHelper {
         return await _requestStoragePermissionAndroid8To9(context);
       }
     } catch (e) {
-      print('$_tag: 请求存储权限时发生错误: $e');
       if (context != null) {
         _showErrorMessage(context, '权限请求失败: $e');
       }
@@ -81,27 +81,21 @@ class PermissionHelper {
   }
 
   /// Android 11+ 权限请求
-  static Future<bool> _requestStoragePermissionAndroid11Plus(BuildContext? context) async {
-    print('$_tag: 使用Android 11+ 权限请求策略');
-
+  static Future<bool> _requestStoragePermissionAndroid11Plus(
+    BuildContext? context,
+  ) async {
     // 直接尝试请求管理外部存储权限（这是Android 11+访问所有文件的关键权限）
     PermissionStatus manageStatus = PermissionStatus.denied;
     try {
       manageStatus = await Permission.manageExternalStorage.request();
-      print('$_tag: 管理外部存储权限请求结果: ${manageStatus.isGranted ? "已授予" : "被拒绝"}');
-    } catch (e) {
-      print('$_tag: 请求管理外部存储权限失败: $e');
-    }
+    } catch (e) {}
 
     // 如果管理外部存储权限被拒绝，尝试请求基础存储权限
     PermissionStatus storageStatus = PermissionStatus.denied;
     if (!manageStatus.isGranted) {
       try {
         storageStatus = await Permission.storage.request();
-        print('$_tag: 存储权限请求结果: ${storageStatus.isGranted ? "已授予" : "被拒绝"}');
-      } catch (e) {
-        print('$_tag: 请求存储权限失败: $e');
-      }
+      } catch (e) {}
     }
 
     // 如果还是被拒绝，尝试请求照片权限（Android 13+）
@@ -109,17 +103,13 @@ class PermissionHelper {
     if (!manageStatus.isGranted && !storageStatus.isGranted) {
       try {
         photosStatus = await Permission.photos.request();
-        print('$_tag: 照片权限请求结果: ${photosStatus.isGranted ? "已授予" : "被拒绝"}');
-      } catch (e) {
-        print('$_tag: 请求照片权限失败: $e');
-      }
+      } catch (e) {}
     }
 
-    final hasPermission = manageStatus.isGranted ||
+    final hasPermission =
+        manageStatus.isGranted ||
         storageStatus.isGranted ||
         photosStatus.isGranted;
-
-    print('$_tag: Android 11+ 综合权限结果: ${hasPermission ? "已授予" : "被拒绝"}');
 
     if (hasPermission) {
       if (context != null) {
@@ -135,12 +125,11 @@ class PermissionHelper {
   }
 
   /// Android 10 权限请求
-  static Future<bool> _requestStoragePermissionAndroid10(BuildContext? context) async {
-    print('$_tag: 使用Android 10 权限请求策略');
-
+  static Future<bool> _requestStoragePermissionAndroid10(
+    BuildContext? context,
+  ) async {
     // Android 10 只需要基础存储权限
     final storageStatus = await Permission.storage.request();
-    print('$_tag: Android 10 存储权限请求结果: ${storageStatus.isGranted ? "已授予" : "被拒绝"}');
 
     if (storageStatus.isGranted) {
       if (context != null) {
@@ -156,12 +145,11 @@ class PermissionHelper {
   }
 
   /// Android 8-9 权限请求
-  static Future<bool> _requestStoragePermissionAndroid8To9(BuildContext? context) async {
-    print('$_tag: 使用Android 8-9 权限请求策略');
-
+  static Future<bool> _requestStoragePermissionAndroid8To9(
+    BuildContext? context,
+  ) async {
     // Android 8-9 只需要基础存储权限
     final storageStatus = await Permission.storage.request();
-    print('$_tag: Android 8-9 存储权限请求结果: ${storageStatus.isGranted ? "已授予" : "被拒绝"}');
 
     if (storageStatus.isGranted) {
       if (context != null) {
@@ -187,7 +175,6 @@ class PermissionHelper {
         return false;
       }
     } catch (e) {
-      print('$_tag: 请求相机权限时发生错误: $e');
       return false;
     }
   }
@@ -196,9 +183,7 @@ class PermissionHelper {
   static Future<void> openAppSettings() async {
     try {
       await openAppSettings();
-    } catch (e) {
-      print('$_tag: 打开应用设置失败: $e');
-    }
+    } catch (e) {}
   }
 
   /// 检查Android版本
@@ -218,10 +203,14 @@ class PermissionHelper {
   }
 
   /// 显示权限被拒绝的对话框
-  static void _showPermissionDeniedDialog(BuildContext context, [String permissionName = '存储', String androidVersion = '']) {
+  static void _showPermissionDeniedDialog(
+    BuildContext context, [
+    String permissionName = '存储',
+    String androidVersion = '',
+  ]) {
     String title = '需要$permissionName权限';
     String content = '应用需要$permissionName权限才能正常工作。';
-    
+
     if (androidVersion.isNotEmpty) {
       content += '\n\n当前系统版本：$androidVersion';
     }
@@ -341,30 +330,15 @@ class PermissionHelper {
     PermissionStatus photosStatus,
     bool hasPermission,
   ) {
-    print('$_tag: 存储权限状态: ${storageStatus.isGranted ? "已授予" : "未授予"} (${storageStatus.name})');
-    print('$_tag: 管理外部存储权限: ${manageExternalStorageStatus.isGranted ? "已授予" : "未授予"} (${manageExternalStorageStatus.name})');
-    print('$_tag: 照片权限状态: ${photosStatus.isGranted ? "已授予" : "未授予"} (${photosStatus.name})');
-    print('$_tag: 综合权限状态: ${hasPermission ? "已授予" : "未授予"}');
-
     // 记录详细的权限状态
     if (storageStatus.isDenied) {
-      print('$_tag: 存储权限被拒绝');
     } else if (storageStatus.isPermanentlyDenied) {
-      print('$_tag: 存储权限被永久拒绝');
-    } else if (storageStatus.isRestricted) {
-      print('$_tag: 存储权限受限');
-    }
+    } else if (storageStatus.isRestricted) {}
 
     if (manageExternalStorageStatus.isDenied) {
-      print('$_tag: 管理外部存储权限被拒绝');
-    } else if (manageExternalStorageStatus.isPermanentlyDenied) {
-      print('$_tag: 管理外部存储权限被永久拒绝');
-    }
+    } else if (manageExternalStorageStatus.isPermanentlyDenied) {}
 
     if (photosStatus.isDenied) {
-      print('$_tag: 照片权限被拒绝');
-    } else if (photosStatus.isPermanentlyDenied) {
-      print('$_tag: 照片权限被永久拒绝');
-    }
+    } else if (photosStatus.isPermanentlyDenied) {}
   }
-} 
+}

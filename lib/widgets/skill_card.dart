@@ -24,7 +24,7 @@ class StripePainter extends CustomPainter {
     final offset = (animation.value * stripeSpacing) % stripeSpacing;
     final paint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white.withOpacity(0.3); // 提高透明度
+      ..color = Colors.white.withValues(alpha: 0.3); // 提高透明度
 
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width * progress, size.height));
@@ -60,7 +60,6 @@ class RainbowFlowProgressPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final barWidth = size.width * progress;
-    const int invisibleFactor = 10;
     // HSL色环插值生成36个彩虹色，首尾自然衔接
     final List<Color> rainbow = List.generate(36, (i) {
       final h = i * 10.0;
@@ -215,8 +214,8 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
-                              ? kTextSubDark
-                              : kTextSub,
+                                  ? kTextSubDark
+                                  : kTextSub,
                             ),
                           ),
                         ),
@@ -247,7 +246,8 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(3),
                               color:
-                                  Theme.of(context).brightness == Brightness.dark
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? kCardDark
                                   : kButtonLight,
                             ),
@@ -267,8 +267,7 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                         height: 6,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
-                          color:
-                              Theme.of(context).brightness == Brightness.dark
+                          color: Theme.of(context).brightness == Brightness.dark
                               ? kCardDark
                               : kButtonLight,
                         ),
@@ -293,30 +292,5 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
         ),
       ),
     );
-  }
-
-  // 根据进度获取彩虹渐变色
-  List<Color> _getProgressGradient(double progress) {
-    // 彩虹色渐变
-    return [
-      Colors.red,
-      Colors.orange,
-      Colors.yellow,
-      Colors.green,
-      Colors.blue,
-      Colors.indigo,
-      Colors.purple,
-    ];
-  }
-
-  // 根据进度获取颜色
-  Color _getProgressColor(double progress) {
-    if (progress >= 0.8) {
-      return Colors.green; // 接近完成时显示绿色
-    } else if (progress >= 0.5) {
-      return Colors.orange; // 过半时显示橙色
-    } else {
-      return kPrimaryColor; // 默认主题色
-    }
   }
 }

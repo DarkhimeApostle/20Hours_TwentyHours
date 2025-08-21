@@ -37,7 +37,7 @@ class MainAppBarTitle extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -56,7 +56,7 @@ class MainAppBarTitle extends StatelessWidget {
                         height: 32,
                         decoration: BoxDecoration(
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? kPrimaryColor.withOpacity(0.85)
+                              ? kPrimaryColor.withValues(alpha: 0.85)
                               : kPrimaryColor,
                         ),
                         child: Icon(
@@ -72,7 +72,7 @@ class MainAppBarTitle extends StatelessWidget {
                     height: 32,
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? kPrimaryColor.withOpacity(0.85)
+                          ? kPrimaryColor.withValues(alpha: 0.85)
                           : kPrimaryColor,
                     ),
                     child: Icon(Icons.person, color: Colors.white, size: 16),
@@ -123,12 +123,11 @@ class MainDrawer extends StatelessWidget {
                       as ImageProvider,
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.1),
+              Colors.black.withValues(alpha: 0.1),
               BlendMode.darken,
             ),
             onError: (exception, stackTrace) {
               // 背景图片加载失败时的处理
-              print('Drawer背景图片加载失败: $exception');
             },
           ),
         ),
@@ -214,11 +213,11 @@ class MainDrawer extends StatelessWidget {
         width: double.infinity,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: Offset(0, 2),
             ),
@@ -286,9 +285,6 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _stripeAnimationController;
 
-  // 条纹动画的偏移量
-  final double _stripeOffset = 0.0;
-
   // 条纹间距
   final double stripeSpacing = 10.0;
 
@@ -347,14 +343,12 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 应用状态变化处理
   void _onAppStateChanged() {
-    print('RootScreen: 收到应用状态变化通知，刷新用户数据');
     // 先刷新数据，然后强制重建UI
     _refreshUserImages().then((_) {
       _loadUserName().then((_) {
         if (mounted) {
           setState(() {
             // 强制重建UI以更新头像和侧边栏
-            print('RootScreen: UI重建完成，头像: $_avatarPath, 用户名: $_userName');
           });
           // 刷新主页面技能数据
           if (_selectedIndex == 0) {
@@ -399,7 +393,6 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
           _avatarPath = prefs.getString('user_avatar_path');
           _drawerBgPath = prefs.getString('drawer_bg_path');
         });
-        print('RootScreen: 用户头像和背景已刷新 - 头像: $_avatarPath, 背景: $_drawerBgPath');
       }
     } catch (e) {
       print('刷新用户图片失败: $e');
@@ -415,7 +408,6 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
           _userName = prefs.getString('user_name') ?? '开狼';
           _isDataLoaded = true;
         });
-        print('RootScreen: 用户名已刷新 - $_userName');
       }
     } catch (e) {
       print('加载用户名失败: $e');
@@ -519,7 +511,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     } else {
       return CircleAvatar(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? kPrimaryColor.withOpacity(0.85)
+            ? kPrimaryColor.withValues(alpha: 0.85)
             : kPrimaryColor,
         radius: radius,
         child: Icon(Icons.person, color: Colors.white, size: radius),
@@ -534,10 +526,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       key: _scaffoldKey, // 添加key
       appBar: AppBar(
         title: _selectedIndex == 0 && _isDataLoaded
-            ? MainAppBarTitle(
-                avatarPath: _avatarPath,
-                userName: _userName,
-              )
+            ? MainAppBarTitle(avatarPath: _avatarPath, userName: _userName)
             : (_selectedIndex == 0 && !_isDataLoaded
                   ? const Text('TwentyHours')
                   : _selectedIndex == 1
@@ -759,14 +748,10 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 启动自动导出定时器
   void _startAutoExportTimer() {
-    print('RootScreen: 启动15秒自动导出定时器');
     _autoExportTimer = Timer(const Duration(seconds: 15), () {
-      print('RootScreen: 15秒定时器触发，开始自动导出配置');
       if (mounted) {
         ConfigExporter.autoExportConfig();
-      } else {
-        print('RootScreen: Widget已销毁，取消自动导出');
-      }
+      } else {}
     });
   }
 
@@ -775,7 +760,6 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
     _animationController.dispose();
     _stripeAnimationController.dispose();
     if (_autoExportTimer != null) {
-      print('RootScreen: 取消自动导出定时器');
       _autoExportTimer!.cancel();
     }
     AppStateNotifier().removeListener(_onAppStateChanged); // 移除监听器

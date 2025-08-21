@@ -9,9 +9,7 @@ import '../main.dart';
 import '../models/skill_model.dart';
 import '../models/skill_group.dart';
 import '../utils/group_storage.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../utils/permission_helper.dart';
-import '../utils/file_access_helper.dart';
 import '../utils/config_exporter.dart';
 import '../utils/app_state_notifier.dart';
 
@@ -52,9 +50,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _avatarPath = prefs.getString('user_avatar_path');
       _drawerBgPath = prefs.getString('drawer_bg_path');
     });
-    print('加载图片路径:');
-    print('  头像路径: $_avatarPath');
-    print('  背景路径: $_drawerBgPath');
   }
 
   // 加载用户名
@@ -101,7 +96,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // 检查存储权限
       if (!await PermissionHelper.hasStoragePermission()) {
-        final granted = await PermissionHelper.requestStoragePermission(context);
+        final granted = await PermissionHelper.requestStoragePermission(
+          context,
+        );
         if (!granted) {
           print('用户拒绝了存储权限，无法选择图片');
           return;
@@ -159,25 +156,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // 使用应用内部存储目录
       final appDir = await getApplicationDocumentsDirectory();
-      String backupPath = '${appDir.path}/t20_backup';
-      print('使用应用内部存储目录: $backupPath');
+      final backupPath = '${appDir.path}/t20_backup';
 
-      // 创建或清空备份目录
+      // 创建备份目录（如果不存在）
       final backupDir = Directory(backupPath);
-      if (await backupDir.exists()) {
-        // 如果目录存在，删除所有内容
-        try {
-          await backupDir.delete(recursive: true);
-        } catch (e) {
-          print('删除旧备份目录失败: $e');
-          // 如果删除失败，尝试使用新的目录名
-          backupPath = '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
-          final newBackupDir = Directory(backupPath);
-          await newBackupDir.create(recursive: true);
-          print('使用新备份目录: $backupPath');
-        }
-      }
-
       if (!await backupDir.exists()) {
         await backupDir.create(recursive: true);
       }
@@ -185,6 +167,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 保存图片
       final fileName = isAvatar ? 'avatar.png' : 'drawer_bg.jpg';
       final savedImagePath = '${backupDir.path}/$fileName';
+
+      // 如果目标文件已存在，先删除
+      final existingFile = File(savedImagePath);
+      if (await existingFile.exists()) {
+        await existingFile.delete();
+      }
+
+      // 复制新图片
       await imageFile.copy(savedImagePath);
 
       // 保存路径到SharedPreferences
@@ -200,8 +190,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _drawerBgPath = savedImagePath;
         }
       });
-
-      print('备份目录: ${backupDir.path}');
     } catch (e) {
       print('保存图片时发生错误: $e');
       rethrow;
@@ -246,7 +234,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // 检查存储权限
       if (!await PermissionHelper.hasStoragePermission()) {
-        final granted = await PermissionHelper.requestStoragePermission(context);
+        final granted = await PermissionHelper.requestStoragePermission(
+          context,
+        );
         if (!granted) {
           throw Exception('需要存储权限才能导出配置');
         }
@@ -262,8 +252,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('未选择有效的导出目录');
       }
 
-      print('用户选择的导出目录: $selectedDirectory');
-
       // 创建备份目录
       final backupPath = '$selectedDirectory/t20_backup';
       final backupDir = Directory(backupPath);
@@ -273,20 +261,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         try {
           await backupDir.delete(recursive: true);
         } catch (e) {
-          print('删除旧备份目录失败: $e');
           // 如果删除失败，尝试使用新的目录名
-          final newBackupPath = '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
+          final newBackupPath =
+              '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
           final newBackupDir = Directory(newBackupPath);
           await newBackupDir.create(recursive: true);
-          print('使用新备份目录: $newBackupPath');
         }
       }
 
       if (!await backupDir.exists()) {
         await backupDir.create(recursive: true);
       }
-
-      print('备份目录: ${backupDir.path}');
 
       final prefs = await SharedPreferences.getInstance();
 
@@ -301,12 +286,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
         'skills': {'mainSkills': [], 'hallOfGlorySkills': []},
         'diaries': {},
-        'congratulatedSkills': prefs.getStringList('congratulated_skill_ids') ?? [],
+        'congratulatedSkills':
+            prefs.getStringList('congratulated_skill_ids') ?? [],
         'groups': [],
       };
 
       // 获取所有技能数据
-      final List<String>? skillsAsString = prefs.getStringList('skills_list_key');
+      final List<String>? skillsAsString = prefs.getStringList(
+        'skills_list_key',
+      );
       if (skillsAsString != null && skillsAsString.isNotEmpty) {
         final List<Skill> allSkills = skillsAsString
             .map((e) => Skill.fromMap(Map<String, dynamic>.from(jsonDecode(e))))
@@ -343,16 +331,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final extension = _avatarPath!.split('.').last;
             final backupAvatarPath = '${backupDir.path}/avatar.$extension';
             await avatarFile.copy(backupAvatarPath);
-            print('头像已复制: $backupAvatarPath (原格式: $extension)');
-          } else {
-            print('头像文件不存在: $_avatarPath');
-          }
+          } else {}
         } catch (e) {
           print('复制头像失败: $e');
         }
-      } else {
-        print('没有头像路径');
-      }
+      } else {}
 
       if (_drawerBgPath != null && _drawerBgPath!.isNotEmpty) {
         try {
@@ -362,24 +345,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final extension = _drawerBgPath!.split('.').last;
             final backupBgPath = '${backupDir.path}/drawer_bg.$extension';
             await bgFile.copy(backupBgPath);
-            print('背景图片已复制: $backupBgPath (原格式: $extension)');
-          } else {
-            print('背景图片文件不存在: $_drawerBgPath');
-          }
+          } else {}
         } catch (e) {
           print('复制背景图片失败: $e');
         }
-      } else {
-        print('没有背景图片路径');
-      }
+      } else {}
 
       // 保存配置文件
       final configFile = File('${backupDir.path}/config.json');
       final configJson = jsonEncode(configData);
       await configFile.writeAsString(configJson);
-
-      print('配置文件内容长度: ${configJson.length} 字符');
-      print('配置文件已保存: ${configFile.path}');
 
       // 验证保存的文件
       final savedContent = await configFile.readAsString();
@@ -387,14 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('配置文件保存验证失败');
       }
 
-      print('保存的配置文件内容长度: ${savedContent.length} 字符');
-
       // 列出备份目录内容
-      print('备份目录内容:');
-      final files = await backupDir.list().toList();
-      for (final file in files) {
-        print('  - ${file.path.split('/').last}');
-      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -405,7 +373,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('配置导出成功！'),
-                Text('导出目录: ${backupDir.path}', style: const TextStyle(fontSize: 12)),
+                Text(
+                  '导出目录: ${backupDir.path}',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -442,15 +413,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 导入配置
   Future<void> _importConfig() async {
     try {
-      print('开始自动导入配置...');
-      
       // 直接在应用内部存储目录查找配置文件
       final appDir = await getApplicationDocumentsDirectory();
       final backupPath = '${appDir.path}/t20_backup';
       final configFile = File('$backupPath/config.json');
-      
-      print('查找配置文件: ${configFile.path}');
-      
+
       if (!await configFile.exists()) {
         throw Exception('未找到自动备份配置文件\n请确保已导出配置或手动选择备份文件夹');
       }
@@ -460,8 +427,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (configContent.isEmpty) {
         throw Exception('配置文件为空');
       }
-
-      print('找到配置文件，大小: ${configContent.length} 字符');
 
       // 处理配置文件
       final backupDir = Directory(backupPath);
@@ -476,7 +441,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('自动导入配置成功！'),
-                Text('配置文件: ${configFile.path}', style: const TextStyle(fontSize: 12)),
+                Text(
+                  '配置文件: ${configFile.path}',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -497,7 +465,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text('自动导入失败'),
                 Text(e.toString(), style: const TextStyle(fontSize: 12)),
-                const Text('请长按"导入配置"按钮手动选择备份文件夹', style: TextStyle(fontSize: 12)),
+                const Text(
+                  '请长按"导入配置"按钮手动选择备份文件夹',
+                  style: TextStyle(fontSize: 12),
+                ),
               ],
             ),
             backgroundColor: Colors.orange,
@@ -513,8 +484,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 手动导入配置
   Future<void> _manualImportConfig() async {
     try {
-      print('开始手动导入配置...');
-      
       // 直接请求管理外部存储权限
       final granted = await PermissionHelper.requestStoragePermission(context);
       if (!granted) {
@@ -531,14 +500,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('未选择有效的备份文件夹');
       }
 
-      print('用户选择的目录: $selectedDirectory');
-
       // 查找配置文件
       final configFile = File('$selectedDirectory/config.json');
-      print('尝试访问配置文件: ${configFile.path}');
 
       if (!await configFile.exists()) {
-        throw Exception('在选择的文件夹中未找到 config.json 文件\n请确保选择了正确的备份文件夹\n路径: ${configFile.path}');
+        throw Exception(
+          '在选择的文件夹中未找到 config.json 文件\n请确保选择了正确的备份文件夹\n路径: ${configFile.path}',
+        );
       }
 
       // 直接读取配置文件
@@ -548,11 +516,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (configContent.isEmpty) {
           throw Exception('配置文件为空');
         }
-        print('配置文件大小: ${configContent.length} 字符');
       } catch (e) {
         print('读取配置文件失败: $e');
         if (e.toString().contains('Permission denied')) {
-          throw Exception('权限被拒绝，无法读取配置文件\n\n请按以下步骤操作：\n1. 在设置中找到"权限"或"应用权限"\n2. 找到"文件和媒体"或"存储"\n3. 选择"管理所有文件"并开启\n\n错误详情: $e');
+          throw Exception(
+            '权限被拒绝，无法读取配置文件\n\n请按以下步骤操作：\n1. 在设置中找到"权限"或"应用权限"\n2. 找到"文件和媒体"或"存储"\n3. 选择"管理所有文件"并开启\n\n错误详情: $e',
+          );
         } else {
           throw Exception('读取配置文件失败\n错误详情: $e');
         }
@@ -571,7 +540,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('配置导入成功！'),
-                Text('配置文件: ${configFile.path}', style: const TextStyle(fontSize: 12)),
+                Text(
+                  '配置文件: ${configFile.path}',
+                  style: const TextStyle(fontSize: 12),
+                ),
                 const Text('已加载，可能需重启', style: TextStyle(fontSize: 12)),
               ],
             ),
@@ -607,12 +579,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // 处理配置文件
-  Future<void> _processConfigFile(String configContent, Directory backupDir) async {
+  Future<void> _processConfigFile(
+    String configContent,
+    Directory backupDir,
+  ) async {
     // 解析JSON
     Map<String, dynamic> configData;
     try {
       configData = jsonDecode(configContent) as Map<String, dynamic>;
-      print('JSON解析成功，包含 ${configData.length} 个顶级字段');
     } catch (e) {
       if (e.toString().contains('Unexpected character')) {
         throw Exception('配置文件格式错误：包含无效字符\n请确保文件未被损坏');
@@ -636,9 +610,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await prefs.setString('user_name', userInfo['userName'] ?? '开发者');
 
       // 恢复头像 - 支持多种格式
-      final avatarFormats = ['avatar.png', 'avatar.jpg', 'avatar.jpeg', 'avatar.webp', 'avatar.gif'];
+      final avatarFormats = [
+        'avatar.png',
+        'avatar.jpg',
+        'avatar.jpeg',
+        'avatar.webp',
+        'avatar.gif',
+      ];
       String? avatarDestPath;
-      
+
       for (final format in avatarFormats) {
         final avatarSourcePath = '${backupDir.path}/$format';
         final avatarSourceFile = File(avatarSourcePath);
@@ -648,26 +628,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final appDir = await getApplicationDocumentsDirectory();
             final extension = format.split('.').last;
             avatarDestPath = '${appDir.path}/avatar.$extension';
-            
+
             // 复制头像文件
-            await avatarSourceFile.copy(avatarDestPath!);
+            await avatarSourceFile.copy(avatarDestPath);
             await prefs.setString('user_avatar_path', avatarDestPath);
-            print('头像恢复成功: $avatarDestPath (原格式: $format)');
+
             break; // 找到第一个存在的文件就停止
           } catch (e) {
             print('恢复头像失败 ($format): $e');
           }
         }
       }
-      
-      if (avatarDestPath == null) {
-        print('未找到任何格式的头像文件');
-      }
+
+      if (avatarDestPath == null) {}
 
       // 恢复背景图片 - 支持多种格式
-      final bgFormats = ['drawer_bg.jpg', 'drawer_bg.jpeg', 'drawer_bg.png', 'drawer_bg.webp'];
+      final bgFormats = [
+        'drawer_bg.jpg',
+        'drawer_bg.jpeg',
+        'drawer_bg.png',
+        'drawer_bg.webp',
+      ];
       String? bgDestPath;
-      
+
       for (final format in bgFormats) {
         final bgSourcePath = '${backupDir.path}/$format';
         final bgSourceFile = File(bgSourcePath);
@@ -677,21 +660,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final appDir = await getApplicationDocumentsDirectory();
             final extension = format.split('.').last;
             bgDestPath = '${appDir.path}/drawer_bg.$extension';
-            
+
             // 复制背景图片文件
-            await bgSourceFile.copy(bgDestPath!);
+            await bgSourceFile.copy(bgDestPath);
             await prefs.setString('drawer_bg_path', bgDestPath);
-            print('背景图片恢复成功: $bgDestPath (原格式: $format)');
+
             break; // 找到第一个存在的文件就停止
           } catch (e) {
             print('恢复背景图片失败 ($format): $e');
           }
         }
       }
-      
-      if (bgDestPath == null) {
-        print('未找到任何格式的背景图片文件');
-      }
+
+      if (bgDestPath == null) {}
     }
 
     // 恢复技能数据
@@ -714,7 +695,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       // 恢复荣耀殿堂技能
-      final hallOfGlorySkills = skillsData['hallOfGlorySkills'] as List<dynamic>?;
+      final hallOfGlorySkills =
+          skillsData['hallOfGlorySkills'] as List<dynamic>?;
       if (hallOfGlorySkills != null) {
         for (final skillData in hallOfGlorySkills) {
           try {
@@ -729,9 +711,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // 保存技能数据
       if (allSkills.isNotEmpty) {
-        final skillsAsString = allSkills.map((skill) => jsonEncode(skill.toMap())).toList();
+        final skillsAsString = allSkills
+            .map((skill) => jsonEncode(skill.toMap()))
+            .toList();
         await prefs.setStringList('skills_list_key', skillsAsString);
-        print('成功恢复 ${allSkills.length} 个技能');
       }
 
       // 恢复技能日记
@@ -741,8 +724,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final skillName = entry.key;
           final diaryList = entry.value as List<dynamic>;
           try {
-            await prefs.setStringList('skill_diary_$skillName', diaryList.cast<String>());
-            print('恢复技能日记: $skillName (${diaryList.length} 条)');
+            await prefs.setStringList(
+              'skill_diary_$skillName',
+              diaryList.cast<String>(),
+            );
           } catch (e) {
             print('恢复技能日记失败: ${entry.key} - $e');
           }
@@ -751,12 +736,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // 恢复祝贺记录
-    final congratulatedSkills = configData['congratulatedSkills'] as List<dynamic>?;
+    final congratulatedSkills =
+        configData['congratulatedSkills'] as List<dynamic>?;
     if (congratulatedSkills != null) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('congratulated_skill_ids', congratulatedSkills.cast<String>());
-        print('恢复祝贺记录: ${congratulatedSkills.length} 个技能');
+        await prefs.setStringList(
+          'congratulated_skill_ids',
+          congratulatedSkills.cast<String>(),
+        );
       } catch (e) {
         print('恢复祝贺记录失败: $e');
       }
@@ -766,9 +754,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final groups = configData['groups'] as List<dynamic>?;
     if (groups != null) {
       try {
-        final skillGroups = groups.map((g) => SkillGroup.fromMap(Map<String, dynamic>.from(g))).toList();
+        final skillGroups = groups
+            .map((g) => SkillGroup.fromMap(Map<String, dynamic>.from(g)))
+            .toList();
         await GroupStorage.saveGroups(skillGroups);
-        print('恢复技能分组: ${groups.length} 个分组');
       } catch (e) {
         print('恢复技能分组失败: $e');
       }
@@ -781,9 +770,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     // 通知整个应用刷新
-    print('SettingsScreen: 准备发送配置导入通知');
     AppStateNotifier().notifyConfigImported();
-    print('SettingsScreen: 配置导入通知已发送');
   }
 
   // 保存用户名
@@ -799,8 +786,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('设置'),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? kCardDark : kCardLight,
-        foregroundColor: Theme.of(context).brightness == Brightness.dark ? kTextMainDark : kTextMain,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? kCardDark
+            : kCardLight,
+        foregroundColor: Theme.of(context).brightness == Brightness.dark
+            ? kTextMainDark
+            : kTextMain,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -813,15 +804,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
-              title: const Text(
-                '用户信息',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: const Text('用户信息', style: TextStyle(color: Colors.grey)),
               subtitle: Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: '用户名：', style: TextStyle(color: Colors.grey)),
-                    TextSpan(text: _userName, style: TextStyle(color: Colors.black)),
+                    TextSpan(
+                      text: '用户名：',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    TextSpan(
+                      text: _userName,
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ],
                 ),
               ),
@@ -869,18 +863,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: ListTile(
               title: const Text('存储权限'),
-              subtitle: Text(_permissionChecked ? (_hasStoragePermission ? '已授予' : '未授予') : '检查中...'),
-              leading: Icon(
-                _permissionChecked ? (_hasStoragePermission ? Icons.check_circle : Icons.error) : Icons.hourglass_empty,
-                color: _permissionChecked ? (_hasStoragePermission ? Colors.green : Colors.red) : Colors.grey,
+              subtitle: Text(
+                _permissionChecked
+                    ? (_hasStoragePermission ? '已授予' : '未授予')
+                    : '检查中...',
               ),
-              trailing: _permissionChecked && !_hasStoragePermission ? TextButton(
-                onPressed: () async {
-                  await _checkStoragePermission();
-                  _requestStoragePermission();
-                },
-                child: const Text('申请'),
-              ) : null,
+              leading: Icon(
+                _permissionChecked
+                    ? (_hasStoragePermission ? Icons.check_circle : Icons.error)
+                    : Icons.hourglass_empty,
+                color: _permissionChecked
+                    ? (_hasStoragePermission ? Colors.green : Colors.red)
+                    : Colors.grey,
+              ),
+              trailing: _permissionChecked && !_hasStoragePermission
+                  ? TextButton(
+                      onPressed: () async {
+                        await _checkStoragePermission();
+                        _requestStoragePermission();
+                      },
+                      child: const Text('申请'),
+                    )
+                  : null,
             ),
           ),
 
@@ -895,18 +899,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 ListTile(
                   title: const Text('导出配置'),
-                  subtitle: const Text('单击导出，长按选择备份地址\n长按备份地址建议：Download/自定义文件夹'),
+                  subtitle: const Text('选择备份地址\n建议：Download/自定义文件夹'),
                   leading: const Icon(Icons.upload),
-                  onTap: _autoExportConfig,
-                  onLongPress: _manualExportConfig,
+                  onTap: _manualExportConfig,
                   dense: true,
                 ),
                 ListTile(
                   title: const Text('导入配置'),
-                  subtitle: const Text('单击尝试自动导入，或长按选择文件夹'),
+                  subtitle: const Text('选择文件夹导入配置'),
                   leading: const Icon(Icons.download),
-                  onTap: _importConfig,
-                  onLongPress: _manualImportConfig,
+                  onTap: _manualImportConfig,
                   dense: true,
                 ),
               ],

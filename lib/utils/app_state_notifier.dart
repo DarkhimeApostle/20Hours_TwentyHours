@@ -9,27 +9,21 @@ class AppStateNotifier extends ChangeNotifier {
 
   /// 通知配置已导入，需要刷新整个应用
   void notifyConfigImported() {
-    print('AppStateNotifier: 通知配置已导入，刷新应用状态');
-    print('AppStateNotifier: 当前监听器数量: ${hasListeners ? "有监听器" : "无监听器"}');
     notifyListeners();
-    print('AppStateNotifier: 通知发送完成');
   }
 
   /// 通知头像已更新
   void notifyAvatarUpdated() {
-    print('AppStateNotifier: 通知头像已更新');
     notifyListeners();
   }
 
   /// 通知背景图片已更新
   void notifyBackgroundUpdated() {
-    print('AppStateNotifier: 通知背景图片已更新');
     notifyListeners();
   }
 
   /// 通知用户名已更新
   void notifyUserNameUpdated() {
-    print('AppStateNotifier: 通知用户名已更新');
     notifyListeners();
   }
-} 
+}

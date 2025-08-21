@@ -22,7 +22,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
   GlorySortType _sortType = GlorySortType.timeDesc;
   List<Skill> reorderList = [];
   late AnimationController _trophyController;
-  late Animation<double> _trophyScale;
   late AnimationController _particlesController;
 
   @override
@@ -32,10 +31,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
     _trophyController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    );
-    _trophyScale = CurvedAnimation(
-      parent: _trophyController,
-      curve: Curves.elasticOut,
     );
     _trophyController.forward();
 
@@ -82,10 +77,7 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                 .where((s) => s.inHallOfGlory == true)
                 .toList();
           });
-
-          print('荣耀殿堂加载了 ${skills.length} 个技能');
         } catch (parseError) {
-          print('解析荣耀殿堂技能数据失败: $parseError');
           setState(() {
             skills = [];
           });
@@ -94,7 +86,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
         setState(() {
           skills = [];
         });
-        print('没有找到技能数据');
       }
     } catch (e) {
       print('加载荣耀殿堂技能时发生错误: $e');
@@ -112,12 +103,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
       sortedSkills.sort((a, b) => b.totalTime.compareTo(a.totalTime));
     } else if (_sortType == GlorySortType.nameAsc) {
       sortedSkills.sort((a, b) => a.name.compareTo(b.name));
-    }
-
-    // 调试信息
-    print('荣耀殿堂：技能数 ${skills.length}');
-    for (final skill in skills) {
-      print('荣耀殿堂技能: ${skill.name}, inHallOfGlory: ${skill.inHallOfGlory}');
     }
 
     return Scaffold(
@@ -284,7 +269,6 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                 itemCount: sortedSkills.length,
                                 itemBuilder: (context, index) {
                                   final skill = sortedSkills[index];
-                                  final realIndex = skills.indexOf(skill);
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 8.0,
@@ -449,10 +433,10 @@ class _HallOfGloryScreenState extends State<HallOfGloryScreen>
                                           ),
                                         ],
                                       ),
-                                      child:                 SkillCard(
-                  skill: skill,
-                  onTap: () {},
-                  onLongPress: () {},
+                                      child: SkillCard(
+                                        skill: skill,
+                                        onTap: () {},
+                                        onLongPress: () {},
                                       ),
                                     ),
                                   );
@@ -505,7 +489,7 @@ class _GloryParticlesPainter extends CustomPainter {
       final opacity = 0.2 + sizeProgress * 0.3;
 
       // 绘制粒子 - 移除光晕，更自然
-      final paint = Paint()..color = Colors.amber.withOpacity(opacity);
+      final paint = Paint()..color = Colors.amber.withValues(alpha: opacity);
 
       canvas.drawCircle(Offset(x, y), radius, paint);
     }
@@ -522,9 +506,8 @@ class StaticSkillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final iconBg =
-        theme.iconTheme.color?.withOpacity(0.12) ?? Colors.grey.shade200;
+        theme.iconTheme.color?.withValues(alpha: 0.12) ?? Colors.grey.shade200;
     final textMain = theme.textTheme.bodyLarge?.color ?? Colors.black;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
