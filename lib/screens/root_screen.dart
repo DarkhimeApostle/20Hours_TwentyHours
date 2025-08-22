@@ -530,7 +530,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
             : (_selectedIndex == 0 && !_isDataLoaded
                   ? const Text('TwentyHours')
                   : _selectedIndex == 1
-                  ? const Text('使用说明')
+                  ? const Text('什么是20小时理论')
                   : _selectedIndex == 2
                   ? const Text('关于')
                   : const Text('T20')),

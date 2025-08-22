@@ -103,8 +103,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _skills.isEmpty
-          ? _buildEmptyState()
-          : _buildStatisticsContent(),
+              ? _buildEmptyState()
+              : _buildStatisticsContent(),
     );
   }
 
@@ -284,7 +284,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Widget _buildSkillRow(Skill skill, int rank) {
     final isLast = rank == _skills.length;
     final progress = (skill.totalTime / (20 * 3600) * 100).clamp(0, 100);
-
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -303,69 +303,69 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              // 排名
-              SizedBox(
-                width: 40,
-                child: Text(
-                  '#$rank',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: rank <= 3 ? Colors.amber : kTextSub,
+        children: [
+          // 排名
+          SizedBox(
+            width: 40,
+            child: Text(
+              '#$rank',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: rank <= 3 ? Colors.amber : kTextSub,
+              ),
+            ),
+          ),
+          // 技能图标和名称
+          Expanded(
+            child: Row(
+              children: [
+                Icon(
+                  skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
+                  size: 20,
+                      color: Color(skill.iconColor),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    skill.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? kTextMainDark
+                          : kTextMain,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-              // 技能图标和名称
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      skillIconMap[skill.iconCodePoint] ?? Icons.help_outline,
-                      size: 20,
-                      color: Color(skill.iconColor),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        skill.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? kTextMainDark
-                              : kTextMain,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
                     const SizedBox(width: 12),
                     // 时间
                     Text(
-                      _formatTime(skill.totalTime),
-                      style: TextStyle(
+              _formatTime(skill.totalTime),
+              style: TextStyle(
                         fontSize: 10,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? kTextSubDark
-                            : kTextSub,
-                      ),
-                    ),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextSubDark
+                    : kTextSub,
+              ),
+            ),
                     const SizedBox(width: 12),
                     // 百分比
-                    Text(
-                      '${progress.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: progress >= 100 ? Colors.green : kPrimaryColor,
-                      ),
+                Text(
+                  '${progress.toInt()}%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: progress >= 100 ? Colors.green : kPrimaryColor,
+                  ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 4),
+                ),
+                const SizedBox(height: 4),
           // 进度条
           Row(
             children: [
@@ -377,9 +377,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(
                     progress >= 100 ? Colors.green : kPrimaryColor,
                   ),
+                  ),
                 ),
-              ),
-            ],
+              ],
           ),
         ],
       ),

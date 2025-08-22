@@ -214,8 +214,8 @@ class _SkillCardState extends State<SkillCard> with TickerProviderStateMixin {
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
-                                  ? kTextSubDark
-                                  : kTextSub,
+                              ? kTextSubDark
+                              : kTextSub,
                             ),
                           ),
                         ),

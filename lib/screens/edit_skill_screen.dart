@@ -284,7 +284,7 @@ class _EditSkillScreenState extends State<EditSkillScreen>
       Navigator.of(context).pop();
       return;
     }
-
+    
     // 如果是编辑技能页面，显示确认删除对话框
     showDialog(
       context: context,

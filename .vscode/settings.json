@@ -1,0 +1,8 @@
+{
+    "dart.flutterSdkPath": "S:\\flutter_windows_3.32.4-stable\\flutter",
+    "dart.devToolsLocation": "embedded",
+    "dart.debugExternalPackageLibraries": true,
+    "dart.debugSdkLibraries": false,
+    "dart.hotReloadOnSave": "all",
+    "dart.hotRestartOnSave": "never"
+} 
