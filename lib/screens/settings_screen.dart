@@ -167,15 +167,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 保存图片
       final fileName = isAvatar ? 'avatar.png' : 'drawer_bg.jpg';
       final savedImagePath = '${backupDir.path}/$fileName';
+      final tempImagePath = '${backupDir.path}/temp_$fileName';
 
-      // 如果目标文件已存在，先删除
-      final existingFile = File(savedImagePath);
-      if (await existingFile.exists()) {
-        await existingFile.delete();
+      // 先复制到临时文件
+      await imageFile.copy(tempImagePath);
+
+      // 验证临时文件是否复制成功
+      final tempFile = File(tempImagePath);
+      if (!await tempFile.exists()) {
+        throw Exception('临时文件创建失败');
       }
 
-      // 复制新图片
-      await imageFile.copy(savedImagePath);
+      // 验证临时文件是否为空
+      final tempFileSize = await tempFile.length();
+      if (tempFileSize == 0) {
+        throw Exception('临时文件为空，复制失败');
+      }
+      print('临时文件创建成功，大小: $tempFileSize 字节');
+
+      // 如果原文件存在，先备份原文件
+      final existingFile = File(savedImagePath);
+      String? backupFilePath = null;
+      if (await existingFile.exists()) {
+        backupFilePath = '${backupDir.path}/backup_$fileName';
+        await existingFile.copy(backupFilePath);
+      }
+
+      try {
+        // 删除原文件（如果存在）
+        if (await existingFile.exists()) {
+          await existingFile.delete();
+        }
+
+        // 将临时文件重命名为目标文件
+        await tempFile.rename(savedImagePath);
+
+        // 验证新文件是否成功创建
+        final newFile = File(savedImagePath);
+        if (!await newFile.exists()) {
+          throw Exception('新文件创建失败');
+        }
+
+        // 验证新文件是否为空
+        final newFileSize = await newFile.length();
+        if (newFileSize == 0) {
+          throw Exception('新文件为空，保存失败');
+        }
+        print('新文件保存成功，大小: $newFileSize 字节');
+
+        // 删除备份文件（如果存在）
+        if (backupFilePath != null) {
+          final backupFile = File(backupFilePath);
+          if (await backupFile.exists()) {
+            await backupFile.delete();
+          }
+        }
+
+        print('图片保存成功: $savedImagePath');
+      } catch (e) {
+        // 如果出错，尝试恢复原文件
+        print('保存过程中出错，尝试恢复: $e');
+        if (backupFilePath != null) {
+          final backupFile = File(backupFilePath);
+          if (await backupFile.exists()) {
+            await backupFile.copy(savedImagePath);
+            print('已恢复原文件');
+          }
+        }
+        rethrow;
+      } finally {
+        // 清理临时文件
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      }
 
       // 保存路径到SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -252,25 +317,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('未选择有效的导出目录');
       }
 
-      // 创建备份目录
+      // 智能创建备份目录
       final backupPath = '$selectedDirectory/t20_backup';
       final backupDir = Directory(backupPath);
 
+      // 检查是否已经存在有效的备份目录
+      bool shouldUseExisting = false;
       if (await backupDir.exists()) {
-        // 如果目录存在，删除所有内容
         try {
-          await backupDir.delete(recursive: true);
+          // 检查是否包含典型的备份文件
+          final configFile = File('${backupDir.path}/config.json');
+          final avatarFiles = backupDir
+              .listSync()
+              .where(
+                (entity) => entity is File && entity.path.contains('avatar.'),
+              )
+              .toList();
+          final bgFiles = backupDir
+              .listSync()
+              .where(
+                (entity) =>
+                    entity is File && entity.path.contains('drawer_bg.'),
+              )
+              .toList();
+
+          // 如果存在配置文件且至少有一个图片文件，认为是有效的备份目录
+          if (await configFile.exists() &&
+              (avatarFiles.isNotEmpty || bgFiles.isNotEmpty)) {
+            shouldUseExisting = true;
+            print('检测到现有备份目录，将进行覆盖: ${backupDir.path}');
+          } else {
+            // 如果目录存在但没有有效文件，删除重建
+            print('检测到无效备份目录，将重新创建');
+            await backupDir.delete(recursive: true);
+          }
         } catch (e) {
-          // 如果删除失败，尝试使用新的目录名
-          final newBackupPath =
-              '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
-          final newBackupDir = Directory(newBackupPath);
-          await newBackupDir.create(recursive: true);
+          print('检查现有备份目录时出错: $e，将重新创建');
+          try {
+            await backupDir.delete(recursive: true);
+          } catch (deleteError) {
+            // 如果删除失败，使用新的目录名
+            final newBackupPath =
+                '${backupPath}_${DateTime.now().millisecondsSinceEpoch}';
+            final newBackupDir = Directory(newBackupPath);
+            await newBackupDir.create(recursive: true);
+            return; // 使用新目录，直接返回
+          }
         }
       }
 
+      // 创建目录（如果不存在）
       if (!await backupDir.exists()) {
         await backupDir.create(recursive: true);
+      }
+
+      // 如果使用现有目录，先清理旧文件
+      if (shouldUseExisting) {
+        try {
+          // 只删除配置文件，保留图片文件（用户可能想保留）
+          final configFile = File('${backupDir.path}/config.json');
+          if (await configFile.exists()) {
+            await configFile.delete();
+          }
+          print('已清理旧配置文件，准备覆盖');
+        } catch (e) {
+          print('清理旧配置文件时出错: $e');
+        }
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -322,7 +434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final groups = await GroupStorage.loadGroups();
       configData['groups'] = groups.map((g) => g.toMap()).toList();
 
-      // 复制头像和背景图片
+      // 智能复制头像和背景图片
       if (_avatarPath != null && _avatarPath!.isNotEmpty) {
         try {
           final avatarFile = File(_avatarPath!);
@@ -330,12 +442,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // 保持原始文件扩展名
             final extension = _avatarPath!.split('.').last;
             final backupAvatarPath = '${backupDir.path}/avatar.$extension';
-            await avatarFile.copy(backupAvatarPath);
-          } else {}
+
+            // 检查目标文件是否已存在且相同
+            final existingAvatarFile = File(backupAvatarPath);
+            if (await existingAvatarFile.exists()) {
+              final sourceSize = await avatarFile.length();
+              final targetSize = await existingAvatarFile.length();
+              if (sourceSize == targetSize) {
+                print('头像文件已存在且相同，跳过复制');
+              } else {
+                print('头像文件已存在但不同，进行覆盖');
+                await avatarFile.copy(backupAvatarPath);
+              }
+            } else {
+              print('复制头像文件');
+              await avatarFile.copy(backupAvatarPath);
+            }
+          } else {
+            print('头像源文件不存在');
+          }
         } catch (e) {
           print('复制头像失败: $e');
         }
-      } else {}
+      } else {
+        print('没有设置头像路径');
+      }
 
       if (_drawerBgPath != null && _drawerBgPath!.isNotEmpty) {
         try {
@@ -344,12 +475,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // 保持原始文件扩展名
             final extension = _drawerBgPath!.split('.').last;
             final backupBgPath = '${backupDir.path}/drawer_bg.$extension';
-            await bgFile.copy(backupBgPath);
-          } else {}
+
+            // 检查目标文件是否已存在且相同
+            final existingBgFile = File(backupBgPath);
+            if (await existingBgFile.exists()) {
+              final sourceSize = await bgFile.length();
+              final targetSize = await existingBgFile.length();
+              if (sourceSize == targetSize) {
+                print('背景文件已存在且相同，跳过复制');
+              } else {
+                print('背景文件已存在但不同，进行覆盖');
+                await bgFile.copy(backupBgPath);
+              }
+            } else {
+              print('复制背景文件');
+              await bgFile.copy(backupBgPath);
+            }
+          } else {
+            print('背景源文件不存在');
+          }
         } catch (e) {
           print('复制背景图片失败: $e');
         }
-      } else {}
+      } else {
+        print('没有设置背景路径');
+      }
 
       // 保存配置文件
       final configFile = File('${backupDir.path}/config.json');

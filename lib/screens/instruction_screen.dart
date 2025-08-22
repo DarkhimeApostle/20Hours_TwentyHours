@@ -17,7 +17,7 @@ class InstructionScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '传统10000小时（一万小时）学习理论，指的是成为传奇般的专家所需要的实际练习时间。而TED 演讲者 Josh Kaufman 发现，从客观掌握一项技能来看，大概只需要20 小时的练习时间。\n\n比如说，如果你花了20小时使用ppt，那么你大概率已经掌握ppt这项技能了。\nT20一个专门进行20小时计时的软件。',
+              '传统10000小时（一万小时）学习理论，指的是成为传奇般的专家所需要的实际练习时间。而TED 演讲者 Josh Kaufman 发现，从客观掌握一项技能来看，大概只需要20 小时的练习时间。\n\n比如说，如果你花了20小时使用ppt，那么你大概率已经掌握ppt这项技能了。\nT20就是一个专门进行20小时计时的软件。',
               style: TextStyle(
                 fontSize: 14,
                 color: Theme.of(context).brightness == Brightness.dark
@@ -132,6 +132,408 @@ class InstructionScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
+
+            Text(
+              '不必被精确限制，比如大概学了30分钟，但是忘记计时了，可以长按技能手动补上30分钟。',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextSubDark
+                    : kTextSub,
+                height: 1.4,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              '功能介绍',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              '功能1：开始计时',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a1.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '图片加载失败\na1.webp',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              '功能2：长按调整时间',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a2.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '图片加载失败\na2.webp',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              '功能3：单击技能可以写小日记',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a3.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '图片加载失败\na3.webp',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Text(
+              '功能4：右上角有新建技能的按钮',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a4.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        '图片加载失败\na4.webp',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            Text(
+              '功能5：滑动技能可以移入移出殿堂',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            Text(
+              '荣耀殿堂是一个专门放那些已完成技能的地方。',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextSubDark
+                    : kTextSub,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a5.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '图片加载失败\na5.webp',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              '功能6：设置界面可以自定义侧边栏背景与头像，ID',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a6.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '图片加载失败\na6.webp',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              '功能7：设置中可以导出当前配置',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? kTextMainDark
+                    : kTextMain,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Image.asset(
+                'assets/images/instructions/a7.webp',
+                width: 200,
+                height: 150,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print('图片加载错误: $error');
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        '图片加载失败\na7.webp',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),

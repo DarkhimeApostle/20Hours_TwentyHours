@@ -15,6 +15,8 @@ import 'package:uuid/uuid.dart';
 import 'package:t20/utils/config_exporter.dart';
 import '../utils/app_state_notifier.dart';
 import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 // 主页面专属AppBar title组件
 class MainAppBarTitle extends StatelessWidget {
@@ -117,17 +119,14 @@ class MainDrawer extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: drawerBgPath != null && drawerBgPath!.isNotEmpty
-                ? FileImage(File(drawerBgPath!))
-                : const AssetImage('assets/images/drawer_bg.jpg')
-                      as ImageProvider,
+            image: _getSafeImageProvider(),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
               Colors.black.withValues(alpha: 0.1),
               BlendMode.darken,
             ),
             onError: (exception, stackTrace) {
-              // 背景图片加载失败时的处理
+              print('侧边栏背景图片加载失败: $exception');
             },
           ),
         ),
@@ -243,6 +242,37 @@ class MainDrawer extends StatelessWidget {
       ),
     );
   }
+
+  // Helper to get a safe ImageProvider for DecorationImage
+  ImageProvider _getSafeImageProvider() {
+    if (drawerBgPath != null && drawerBgPath!.isNotEmpty) {
+      try {
+        final file = File(drawerBgPath!);
+        if (file.existsSync()) {
+          // 检查文件是否为空
+          final fileSize = file.lengthSync();
+          if (fileSize > 0) {
+            print('使用自定义背景图片: $drawerBgPath (大小: ${fileSize} 字节)');
+            return FileImage(file);
+          } else {
+            print('自定义背景图片文件为空: $drawerBgPath. 使用默认背景.');
+            return const AssetImage('assets/images/drawer_bg.jpg')
+                as ImageProvider;
+          }
+        } else {
+          print('自定义抽屉背景文件不存在: $drawerBgPath. 使用默认背景.');
+          return const AssetImage('assets/images/drawer_bg.jpg')
+              as ImageProvider;
+        }
+      } catch (e) {
+        print('自定义抽屉背景图片加载失败: $e. 使用默认背景.');
+        return const AssetImage('assets/images/drawer_bg.jpg') as ImageProvider;
+      }
+    } else {
+      print('使用默认背景图片: assets/images/drawer_bg.jpg');
+      return const AssetImage('assets/images/drawer_bg.jpg') as ImageProvider;
+    }
+  }
 }
 
 // 应用主页面，包含底部导航栏和页面切换逻辑
@@ -343,19 +373,17 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
 
   // 应用状态变化处理
   void _onAppStateChanged() {
-    // 先刷新数据，然后强制重建UI
-    _refreshUserImages().then((_) {
-      _loadUserName().then((_) {
-        if (mounted) {
-          setState(() {
-            // 强制重建UI以更新头像和侧边栏
-          });
-          // 刷新主页面技能数据
-          if (_selectedIndex == 0) {
-            _homeScreenKey.currentState?.loadSkills();
-          }
+    // 只在必要时刷新数据，避免频繁重置背景图片设置
+    _loadUserName().then((_) {
+      if (mounted) {
+        setState(() {
+          // 强制重建UI以更新头像和侧边栏
+        });
+        // 刷新主页面技能数据
+        if (_selectedIndex == 0) {
+          _homeScreenKey.currentState?.loadSkills();
         }
-      });
+      }
     });
   }
 
@@ -378,9 +406,222 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
           _avatarPath = prefs.getString('user_avatar_path');
           _drawerBgPath = prefs.getString('drawer_bg_path');
         });
+
+        // 立即设置数据加载完成，不等待背景图片验证
+        if (mounted) {
+          setState(() {
+            _isDataLoaded = true;
+          });
+        }
+
+        // 异步验证并保护背景图片路径（不阻塞UI）
+        _validateAndProtectDrawerBgPath();
       }
     } catch (e) {
       print('加载用户图片失败: $e');
+      // 即使出错也要设置数据加载完成
+      if (mounted) {
+        setState(() {
+          _isDataLoaded = true;
+        });
+      }
+    }
+  }
+
+  // 验证并保护侧边栏背景图片路径
+  Future<void> _validateAndProtectDrawerBgPath() async {
+    if (_drawerBgPath == null || _drawerBgPath!.isEmpty) {
+      return;
+    }
+
+    try {
+      final file = File(_drawerBgPath!);
+      if (file.existsSync()) {
+        print('自定义背景图片路径有效: $_drawerBgPath');
+        // 确保背景图片在安全位置
+        await _ensureBackgroundImageSafety();
+        // 创建额外备份
+        await _createBackgroundBackup();
+        return;
+      }
+
+      print('自定义背景图片文件不存在: $_drawerBgPath');
+
+      // 尝试从多个位置恢复背景图片
+      final recovered = await _attemptBackgroundRecovery();
+      if (!recovered) {
+        print('无法恢复背景图片，保留用户设置');
+        // 创建一个默认的背景图片副本
+        await _createDefaultBackgroundCopy();
+      }
+    } catch (e) {
+      print('验证背景路径时出错: $e');
+    }
+  }
+
+  // 创建背景图片的额外备份
+  Future<void> _createBackgroundBackup() async {
+    try {
+      if (_drawerBgPath == null || _drawerBgPath!.isEmpty) return;
+
+      final sourceFile = File(_drawerBgPath!);
+      if (!await sourceFile.exists()) return;
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final backupPath = '${appDir.path}/t20_backup';
+
+      // 创建多个备份副本
+      final backupFiles = [
+        '$backupPath/drawer_bg_backup1.jpg',
+        '$backupPath/drawer_bg_backup2.jpg',
+        '$backupPath/drawer_bg_backup3.jpg',
+      ];
+
+      for (final backupFile in backupFiles) {
+        try {
+          await sourceFile.copy(backupFile);
+        } catch (e) {
+          print('创建备份失败 $backupFile: $e');
+        }
+      }
+
+      print('背景图片备份创建完成');
+    } catch (e) {
+      print('创建背景图片备份时出错: $e');
+    }
+  }
+
+  // 尝试从多个位置恢复背景图片
+  Future<bool> _attemptBackgroundRecovery() async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final backupPath = '${appDir.path}/t20_backup';
+
+      // 尝试从备份文件恢复
+      final backupFiles = [
+        '$backupPath/drawer_bg_backup1.jpg',
+        '$backupPath/drawer_bg_backup2.jpg',
+        '$backupPath/drawer_bg_backup3.jpg',
+        '$backupPath/drawer_bg.jpg',
+      ];
+
+      for (final backupFile in backupFiles) {
+        final file = File(backupFile);
+        if (await file.exists()) {
+          print('找到备份文件，正在恢复: $backupFile');
+
+          // 恢复到主文件位置
+          final mainPath = '$backupPath/drawer_bg.jpg';
+          await file.copy(mainPath);
+
+          // 更新路径设置
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('drawer_bg_path', mainPath);
+
+          if (mounted) {
+            setState(() {
+              _drawerBgPath = mainPath;
+            });
+          }
+
+          print('背景图片恢复成功: $mainPath');
+          return true;
+        }
+      }
+
+      print('未找到可用的备份文件');
+      return false;
+    } catch (e) {
+      print('恢复背景图片时出错: $e');
+      return false;
+    }
+  }
+
+  // 创建默认背景图片的副本
+  Future<void> _createDefaultBackgroundCopy() async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final backupPath = '${appDir.path}/t20_backup';
+      final backupDir = Directory(backupPath);
+
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+      }
+
+      // 从assets复制默认背景图片
+      final byteData = await rootBundle.load('assets/images/drawer_bg.jpg');
+      final buffer = byteData.buffer;
+      final defaultBgPath = '$backupPath/drawer_bg.jpg';
+
+      await File(defaultBgPath).writeAsBytes(
+        buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
+      );
+
+      // 更新设置
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('drawer_bg_path', defaultBgPath);
+
+      if (mounted) {
+        setState(() {
+          _drawerBgPath = defaultBgPath;
+        });
+      }
+
+      print('创建默认背景图片副本: $defaultBgPath');
+    } catch (e) {
+      print('创建默认背景图片副本时出错: $e');
+    }
+  }
+
+  // 确保背景图片在安全位置
+  Future<void> _ensureBackgroundImageSafety() async {
+    try {
+      // 如果背景图片不在应用内部的安全目录，复制到安全位置
+      if (!_drawerBgPath!.contains('t20_backup')) {
+        print('检测到外部背景图片，正在复制到安全位置');
+        await _copyBackgroundToSafeLocation();
+      }
+    } catch (e) {
+      print('确保背景图片安全时出错: $e');
+    }
+  }
+
+  // 复制背景图片到安全位置
+  Future<void> _copyBackgroundToSafeLocation() async {
+    try {
+      final sourceFile = File(_drawerBgPath!);
+      if (!await sourceFile.exists()) {
+        print('源背景图片文件不存在，跳过复制');
+        return;
+      }
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final safePath = '${appDir.path}/t20_backup';
+      final safeDir = Directory(safePath);
+
+      if (!await safeDir.exists()) {
+        await safeDir.create(recursive: true);
+      }
+
+      final safeFilePath = '$safePath/drawer_bg.jpg';
+      final safeFile = File(safeFilePath);
+
+      // 复制文件
+      await sourceFile.copy(safeFilePath);
+
+      // 更新路径设置
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('drawer_bg_path', safeFilePath);
+
+      if (mounted) {
+        setState(() {
+          _drawerBgPath = safeFilePath;
+        });
+      }
+
+      print('背景图片已复制到安全位置: $safeFilePath');
+    } catch (e) {
+      print('复制背景图片到安全位置时出错: $e');
     }
   }
 
@@ -406,7 +647,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _userName = prefs.getString('user_name') ?? '开狼';
-          _isDataLoaded = true;
+          // _isDataLoaded 现在在 _loadUserImages 中设置
         });
       }
     } catch (e) {
@@ -414,7 +655,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _userName = '开狼';
-          _isDataLoaded = true;
+          // _isDataLoaded 现在在 _loadUserImages 中设置
         });
       }
     }
@@ -709,7 +950,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                       : kPrimaryColor,
                 ),
               ),
-              label: '说明',
+              label: '使用说明',
             ),
             BottomNavigationBarItem(
               icon: Container(
