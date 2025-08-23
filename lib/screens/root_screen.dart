@@ -775,6 +775,7 @@ class _RootScreenState extends State<RootScreen> with TickerProviderStateMixin {
                   : _selectedIndex == 2
                   ? const Text('关于')
                   : const Text('T20')),
+        centerTitle: _selectedIndex == 1, // 当显示"什么是20小时理论"时居中
         actions: _selectedIndex == 0
             ? [
                 IconButton(
