@@ -42,26 +42,28 @@ T20是一个专门计算20小时的软件。
 ## 🚀 功能介绍
 
 ### 功能1：开始计时
-![功能1演示](assets/images/instructions/a1.webp)
+<img src="assets/images/instructions/a1.webp" width="200">
 
 ### 功能2：长按调整时间与图标
-![功能2演示](assets/images/instructions/a2.webp)
+<img src="assets/images/instructions/a2.webp" width="200">
 
 ### 功能3：单击技能可以写小日记
-![功能3演示](assets/images/instructions/a3.webp)
+<img src="assets/images/instructions/a3.webp" width="200">
 
 ### 功能4：右上角有新建技能的按钮
-![功能4演示](assets/images/instructions/a4.webp)
+<img src="assets/images/instructions/a4.webp" width="200">
 
 ### 功能5：滑动技能可以移入移出殿堂
 > *荣耀殿堂是一个专门放那些已完成技能的地方。*
-![功能5演示](assets/images/instructions/a5.webp)
+
+
+<img src="assets/images/instructions/a5.webp" width="200">
 
 ### 功能6：可以自定义侧边栏背景与头像，ID
-![功能6演示](assets/images/instructions/a6.webp)
+<img src="assets/images/instructions/a6.webp" width="200">
 
 ### 功能7：设置中可以导出当前配置
-![功能7演示](assets/images/instructions/a7.webp)
+<img src="assets/images/instructions/a7.webp" width="200">
 
 ---
 
@@ -126,6 +128,6 @@ T20是一个专门计算20小时的软件。
 [![GitHub issues](https://img.shields.io/github/issues/your-username/t20)](https://github.com/your-username/t20/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/t20)](https://github.com/your-username/t20/pulls)
 
-**Made with ❤️ by [Your Name]**
+by KAIL
 
-</div>
+
